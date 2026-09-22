@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable experimental turbopack root inference if it causes absolute path errors on Linux
-  experimental: {
-    turbopack: false,
-  },
+  // Keep it empty and clean to let Next.js use standard defaults
 };
 
 module.exports = nextConfig;

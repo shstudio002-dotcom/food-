@@ -10,12 +10,14 @@ export default function OrdersPage() {
   const [riderLocations, setRiderLocations] = useState({});
 
   useEffect(() => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
     const fetchOrders = async () => {
       try {
         // Retrieve the unique logged-in user phone number for account isolation
         const userPhone = localStorage.getItem('shopmatries_phone');
         
-        const response = await fetch(`http://localhost:5000/api/orders${userPhone ? `?phone=${userPhone}` : ''}`);
+        const response = await fetch(`${API_URL}/api/orders${userPhone ? `?phone=${userPhone}` : ''}`);
         const data = await response.json();
         
         if (response.ok && Array.isArray(data)) {
@@ -37,7 +39,7 @@ export default function OrdersPage() {
 
     fetchOrders();
 
-    const socket = io('http://localhost:5000');
+    const socket = io(API_URL);
 
     socket.on('orderStatusUpdated', ({ orderId, newStatus }) => {
       setOrders(prevOrders => 

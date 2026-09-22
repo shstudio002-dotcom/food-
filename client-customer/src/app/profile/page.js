@@ -8,6 +8,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
     try {
       const savedName = localStorage.getItem('shopmatries_username');
       const savedPhone = localStorage.getItem('shopmatries_phone');
@@ -21,7 +23,7 @@ export default function ProfilePage() {
       } else {
         // Fallback fetch from backend if localStorage is empty
         const token = localStorage.getItem('shopmatries_token');
-        fetch('http://localhost:5000/api/auth/profile', {
+        fetch(`${API_URL}/api/auth/profile`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

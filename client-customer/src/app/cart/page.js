@@ -29,8 +29,10 @@ export default function CartPage() {
     script.async = true;
     document.body.appendChild(script);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
     // Fetch dynamic delivery fee set by admin
-    fetch('http://localhost:5000/api/settings/delivery-fee')
+    fetch(`${API_URL}/api/settings/delivery-fee`)
       .then(res => res.json())
       .then(data => {
         if (data && data.deliveryFee !== undefined) {
@@ -41,7 +43,7 @@ export default function CartPage() {
 
     // Fetch catalog items and unified cart data supporting both storage keys
     const userPhoneKey = savedPhone || 'default_user';
-    fetch('http://localhost:5000/api/foods')
+    fetch(`${API_URL}/api/foods`)
       .then(res => res.json())
       .then(productsData => {
         const catalog = Array.isArray(productsData) ? productsData : [];
@@ -50,7 +52,7 @@ export default function CartPage() {
           customDetails = JSON.parse(localStorage.getItem(`shopmatries_custom_details_${userPhoneKey}`) || '{}');
         } catch (e) {}
 
-        // 👈 Check both user-isolated key and generic global cart key
+        // Check both user-isolated key and generic global cart key
         const savedCart = localStorage.getItem(`shopmatries_cart_${userPhoneKey}`) || localStorage.getItem('shopmatries_cart');
         
         if (savedCart) {
@@ -140,8 +142,9 @@ export default function CartPage() {
       const activeName = localStorage.getItem('shopmatries_username') || customerName;
       const activePhone = localStorage.getItem('shopmatries_phone') || customerPhone;
       const primaryRestaurantId = cartItems.length > 0 && cartItems[0].hotelId ? cartItems[0].hotelId : '60c72b2f9b1d8b2f98e01234';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
 
-      const response = await fetch('http://localhost:5000/api/orders', {
+      const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

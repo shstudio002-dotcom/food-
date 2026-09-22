@@ -7,7 +7,9 @@ export default function AdminLiveOrders() {
   const [revenue, setRevenue] = useState(0);
 
   const fetchOrders = () => {
-    fetch('http://localhost:5000/api/orders')
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+    fetch(`${API_URL}/api/orders`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -26,8 +28,10 @@ export default function AdminLiveOrders() {
   useEffect(() => {
     fetchOrders();
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
     // Listen for real-time order updates via Socket.io
-    const socket = io('http://localhost:5000');
+    const socket = io(API_URL);
     socket.on('orderStatusUpdated', () => {
       fetchOrders();
     });
@@ -43,7 +47,9 @@ export default function AdminLiveOrders() {
       return;
     }
 
-    fetch(`http://localhost:5000/api/orders/${orderId}`, {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+    fetch(`${API_URL}/api/orders/${orderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus, progress: newProgress })
@@ -56,7 +62,9 @@ export default function AdminLiveOrders() {
   };
 
   const handleDeleteOrder = (orderId) => {
-    fetch(`http://localhost:5000/api/orders/${orderId}`, {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+    fetch(`${API_URL}/api/orders/${orderId}`, {
       method: 'DELETE'
     })
       .then(() => {

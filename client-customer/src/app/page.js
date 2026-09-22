@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 
 const categories = [
   { id: 'all', name: 'All Items', icon: '🌟' },
-  
   { id: 'Breakfast', name: 'Breakfast', icon: '🥞' },
   { id: 'Veg', name: 'Veg', icon: '🥗' },
   { id: 'Non-Veg', name: 'Non-Veg', icon: '🍗' },
@@ -33,14 +32,16 @@ export default function Home() {
     }
     setIsAuthorized(true);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
     // Fetch live restaurants from backend
-    fetch('http://localhost:5000/api/restaurants')
+    fetch(`${API_URL}/api/restaurants`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
           setHotelsList(data);
         } else {
-          fetch('http://localhost:5000/api/foods/restaurants')
+          fetch(`${API_URL}/api/foods/restaurants`)
             .then(r => r.json())
             .then(hData => {
               if (Array.isArray(hData)) setHotelsList(hData);
@@ -50,7 +51,7 @@ export default function Home() {
       })
       .catch(err => {
         console.error('Failed to fetch restaurants:', err);
-        fetch('http://localhost:5000/api/foods/restaurants')
+        fetch(`${API_URL}/api/foods/restaurants`)
           .then(r => r.json())
           .then(hData => {
             if (Array.isArray(hData)) setHotelsList(hData);
@@ -59,7 +60,7 @@ export default function Home() {
       });
 
     // Fetch live food menu catalog from backend
-    fetch('http://localhost:5000/api/foods')
+    fetch(`${API_URL}/api/foods`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setFoodItemsList(data);
@@ -269,7 +270,6 @@ export default function Home() {
               ) : (
                 hotelsList.map((hotel) => {
                   const hotelId = hotel._id || hotel.id;
-                  // Mapping exact fields from Restaurant schema: name, address, cuisine, image, isOpen
                   const cuisineList = Array.isArray(hotel.cuisine) ? hotel.cuisine.join(', ') : (hotel.cuisine || 'Multi-Cuisine');
 
                   return (

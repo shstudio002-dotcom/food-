@@ -19,8 +19,10 @@ export default function QuickMenuPage() {
     const phone = localStorage.getItem('shopmatries_phone') || 'default_user';
     setUserPhone(phone);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
     // Fetch custom menu items from backend
-    fetch('http://localhost:5000/api/custom-menu')
+    fetch(`${API_URL}/api/custom-menu`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -63,7 +65,9 @@ export default function QuickMenuPage() {
       isCustom: true
     };
 
-    fetch('http://localhost:5000/api/custom-menu', {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+    fetch(`${API_URL}/api/custom-menu`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -102,7 +106,9 @@ export default function QuickMenuPage() {
   };
 
   const handleDeleteCustomItem = (id) => {
-    fetch(`http://localhost:5000/api/custom-menu/${id}`, {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+    fetch(`${API_URL}/api/custom-menu/${id}`, {
       method: 'DELETE'
     })
       .then(() => {

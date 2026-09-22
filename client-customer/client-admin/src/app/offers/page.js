@@ -14,7 +14,9 @@ export default function AdminOffersPage() {
 
   // Fetch initial banner/offer data from backend
   useEffect(() => {
-    fetch('http://localhost:5000/api/offers')
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+    fetch(`${API_URL}/api/offers`)
       .then(res => res.json())
       .then(data => {
         if (data) {
@@ -49,7 +51,9 @@ export default function AdminOffersPage() {
   const handleSave = (e) => {
     e.preventDefault();
     
-    fetch('http://localhost:5000/api/offers', {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+    fetch(`${API_URL}/api/offers`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(offer)

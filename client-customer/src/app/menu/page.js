@@ -16,8 +16,10 @@ export default function QuickMenuPage() {
   const [cart, setCart] = useState({});
 
   useEffect(() => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
     // Fetch live food catalog from backend
-    fetch('http://localhost:5000/api/foods')
+    fetch(`${API_URL}/api/foods`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

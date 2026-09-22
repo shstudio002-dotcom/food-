@@ -18,8 +18,8 @@ export default function AdminLoginPage() {
       return;
     }
 
-    // 👈 Dynamically point to live Render backend or localhost fallback
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    // 👈 Pointing directly to your live Render backend without local fallbacks
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
 
     fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
@@ -43,7 +43,6 @@ export default function AdminLoginPage() {
           // Route based on role: Admin goes to admin panel, customer goes to storefront
           if (data.isAdmin) {
             localStorage.setItem('shopmatries_is_admin', 'true');
-            // For production, you can replace this with your deployed admin panel URL or route
             router.push('/admin'); 
           } else {
             localStorage.removeItem('shopmatries_is_admin');
@@ -55,11 +54,7 @@ export default function AdminLoginPage() {
       })
       .catch((err) => {
         console.error('Login connection error:', err);
-        // Fallback local storage login if backend is offline
-        localStorage.setItem('shopmatries_token', 'local-token-' + Date.now());
-        localStorage.setItem('shopmatries_phone', phone);
-        localStorage.setItem('shopmatries_username', 'User ' + phone.slice(-4));
-        router.push('/');
+        setError('Unable to connect to the server. Please check your network.');
       });
   };
 

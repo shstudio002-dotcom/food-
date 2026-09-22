@@ -27,7 +27,9 @@ export default function AdminRegisterPage() {
       return;
     }
 
-    fetch('http://localhost:5000/api/auth/register', {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+    fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, phone, password })

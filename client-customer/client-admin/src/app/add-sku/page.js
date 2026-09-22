@@ -16,7 +16,9 @@ export default function AdminAddFoodDish() {
 
   // Fetch partner hotels directly from backend database
   useEffect(() => {
-    fetch('http://localhost:5000/api/foods/restaurants')
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+    fetch(`${API_URL}/api/foods/restaurants`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -46,13 +48,14 @@ export default function AdminAddFoodDish() {
     
     let finalHotelName = 'Partner Hotel';
     let finalHotelId = formData.hotelId;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
 
     try {
       // If a new hotel is typed, save it to the database first
       if (formData.hotelId === 'new') {
         const newHotelName = formData.hotelNameInput.trim() || 'New Partner Hotel';
         
-        const hotelRes = await fetch('http://localhost:5000/api/foods/restaurants', {
+        const hotelRes = await fetch(`${API_URL}/api/foods/restaurants`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: newHotelName, address: 'Local Area' })
@@ -80,7 +83,7 @@ export default function AdminAddFoodDish() {
       };
 
       // Submit food dish payload to backend
-      const foodRes = await fetch('http://localhost:5000/api/foods', {
+      const foodRes = await fetch(`${API_URL}/api/foods`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

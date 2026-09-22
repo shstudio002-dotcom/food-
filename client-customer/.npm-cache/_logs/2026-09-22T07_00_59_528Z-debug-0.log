@@ -7,13 +7,7 @@
 6 silly config load:file:E:\Food delivery system\client-customer\.npm-global\etc\npmrc
 7 verbose title npm run dev
 8 verbose argv "run" "dev"
-9 verbose logfile logs-max:10 dir:E:\Food delivery system\client-customer\.npm-cache\_logs\2026-09-21T09_08_45_338Z-
-10 verbose logfile E:\Food delivery system\client-customer\.npm-cache\_logs\2026-09-21T09_08_45_338Z-debug-0.log
+9 verbose logfile logs-max:10 dir:E:\Food delivery system\client-customer\.npm-cache\_logs\2026-09-22T07_00_59_528Z-
+10 verbose logfile E:\Food delivery system\client-customer\.npm-cache\_logs\2026-09-22T07_00_59_528Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
-13 verbose cwd E:\Food delivery system\client-customer
-14 verbose os Windows_NT 10.0.26200
-15 verbose node v22.14.0
-16 verbose npm  v10.9.2
-17 verbose exit 1
-18 verbose code 1

@@ -31,6 +31,15 @@ app.use(cors());
 let currentDeliveryFee = 30;
 let customMenuStore = [];
 
+// 🚀 Root Status Endpoint (Fixes 404 Not Found on Render root URL)
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: 'success',
+    message: 'Shopmatries Food Delivery Backend is Live and Running Smoothly! 🚀',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Delivery Fee Endpoints
 app.get('/api/settings/delivery-fee', (req, res) => {
   res.json({ deliveryFee: currentDeliveryFee });

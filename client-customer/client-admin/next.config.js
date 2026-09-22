@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  turbopack: {
-    root: __dirname,
+  // Disable experimental turbopack root inference if it causes absolute path errors on Linux
+  experimental: {
+    turbopack: false,
   },
-  allowedDevOrigins: ['192.168.56.1', 'localhost:3001'],
 };
 
 module.exports = nextConfig;

@@ -18,7 +18,10 @@ export default function AdminLoginPage() {
       return;
     }
 
-    fetch('http://localhost:5000/api/auth/login', {
+    // 👈 Dynamically point to live Render backend or localhost fallback
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+    fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -37,10 +40,11 @@ export default function AdminLoginPage() {
             }
           }
 
-          // Route based on role: Admin goes to the client-admin page layout, customer goes to storefront
+          // Route based on role: Admin goes to admin panel, customer goes to storefront
           if (data.isAdmin) {
             localStorage.setItem('shopmatries_is_admin', 'true');
-            window.location.href = 'http://192.168.56.1:3001'; // ⚡ Redirects to your client-admin folder route
+            // For production, you can replace this with your deployed admin panel URL or route
+            router.push('/admin'); 
           } else {
             localStorage.removeItem('shopmatries_is_admin');
             router.push('/');
@@ -105,7 +109,7 @@ export default function AdminLoginPage() {
 
         <button 
           type="submit"
-          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition active:scale-95 mt-2"
+          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition active:scale-95 mt-2 cursor-pointer"
         >
           Sign In ⚡
         </button>

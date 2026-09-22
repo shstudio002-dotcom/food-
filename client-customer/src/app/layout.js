@@ -2,13 +2,38 @@
 import './globals.css';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function RootLayout({ children }) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
 
-  // Hide bottom navigation bar on login, register, and admin pages
+  // Prevent SSR hydration mismatch by ensuring client-side mount state
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const isAdminRoute = pathname?.startsWith('/admin');
-  const hideNavBar = pathname === '/login' || pathname === '/register' || isAdminRoute;
+  const hideNavBar = !mounted || pathname === '/login' || pathname === '/register' || isAdminRoute;
+
+  // During SSR / initial load, render a stable base wrapper to match client layout
+  if (!mounted) {
+    return (
+      <html lang="en" className="h-full">
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+          <title>Shopmatries Food Delivery</title>
+        </head>
+        <body className="bg-slate-950 text-slate-900 h-dvh w-screen m-0 p-0 flex justify-center items-center antialiased overflow-hidden">
+          <div className="w-full h-full sm:h-[92vh] sm:max-h-[880px] sm:w-[410px] sm:rounded-[40px] bg-white shadow-2xl relative flex flex-col justify-between overflow-hidden">
+            <main className="flex-1 overflow-y-auto relative bg-white">
+              {children}
+            </main>
+          </div>
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html lang="en" className="h-full">

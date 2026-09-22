@@ -59,7 +59,7 @@ export default function RootLayout({ children }) {
               {children}
             </main>
 
-            {/* Stationary Bottom Function & Navigation Bar (Hidden on Login & Register) */}
+            {/* Stationary Bottom Function & Navigation Bar (Hidden only on Login, Register, & Admin) */}
             {!hideNavBar && (
               <nav 
                 id="bottom-nav-bar"

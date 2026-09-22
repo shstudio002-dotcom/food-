@@ -1,0 +1,31 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.14.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\HP\.npmrc
+5 silly config load:file:E:\Food delivery system\backend\.npm-global\etc\npmrc
+6 verbose title npm install npm@12.0.2
+7 verbose argv "install" "--global" "npm@12.0.2"
+8 verbose logfile logs-max:10 dir:E:\Food delivery system\backend\.npm-cache\_logs\2026-09-20T05_24_54_829Z-
+9 verbose logfile E:\Food delivery system\backend\.npm-cache\_logs\2026-09-20T05_24_54_829Z-debug-0.log
+10 silly logfile done cleaning log files
+11 http fetch GET 200 https://registry.npmjs.org/npm 577ms (cache miss)
+12 verbose stack Error: Unsupported engine
+12 verbose stack     at Object.checkEngine (C:\Program Files\nodejs\node_modules\npm\node_modules\npm-install-checks\lib\index.js:16:25)
+12 verbose stack     at Install.exec (C:\Program Files\nodejs\node_modules\npm\lib\commands\install.js:113:16)
+12 verbose stack     at async Npm.exec (C:\Program Files\nodejs\node_modules\npm\lib\npm.js:207:9)
+12 verbose stack     at async module.exports (C:\Program Files\nodejs\node_modules\npm\lib\cli\entry.js:74:5)
+13 verbose pkgid npm@12.0.2
+14 error code EBADENGINE
+15 error engine Unsupported engine
+16 error engine Not compatible with your version of node/npm: npm@12.0.2
+17 error notsup Not compatible with your version of node/npm: npm@12.0.2
+17 error notsup Required: {"node":"^22.22.2 || ^24.15.0 || >=26.0.0"}
+17 error notsup Actual:   {"npm":"10.9.2","node":"v22.14.0"}
+18 verbose cwd E:\Food delivery system\backend
+19 verbose os Windows_NT 10.0.26200
+20 verbose node v22.14.0
+21 verbose npm  v10.9.2
+22 verbose exit 1
+23 verbose code 1
+24 error A complete log of this run can be found in: E:\Food delivery system\backend\.npm-cache\_logs\2026-09-20T05_24_54_829Z-debug-0.log

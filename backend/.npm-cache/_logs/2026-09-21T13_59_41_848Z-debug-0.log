@@ -1,0 +1,40 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.14.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:E:\Food delivery system\backend\.npmrc
+5 silly config load:file:C:\Users\HP\.npmrc
+6 silly config load:file:E:\Food delivery system\backend\.npm-global\etc\npmrc
+7 verbose title npm init
+8 verbose argv "init" "--yes"
+9 verbose logfile logs-max:10 dir:E:\Food delivery system\backend\.npm-cache\_logs\2026-09-21T13_59_41_848Z-
+10 verbose logfile E:\Food delivery system\backend\.npm-cache\_logs\2026-09-21T13_59_41_848Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly package data {
+12 silly package data   name: 'backend',
+12 silly package data   version: '1.0.0',
+12 silly package data   main: 'server.js',
+12 silly package data   scripts: { start: 'node server.js', dev: 'nodemon server.js' },
+12 silly package data   dependencies: {
+12 silly package data     bcryptjs: '^2.4.3',
+12 silly package data     cors: '^2.8.5',
+12 silly package data     dotenv: '^16.6.1',
+12 silly package data     express: '^4.19.2',
+12 silly package data     jsonwebtoken: '^9.0.2',
+12 silly package data     mongoose: '^8.3.1',
+12 silly package data     'socket.io': '^4.7.5'
+12 silly package data   },
+12 silly package data   devDependencies: {},
+12 silly package data   keywords: [],
+12 silly package data   author: '',
+12 silly package data   license: 'ISC',
+12 silly package data   description: '',
+12 silly package data   [Symbol(newline)]: '',
+12 silly package data   [Symbol(indent)]: ''
+12 silly package data }
+13 verbose cwd E:\Food delivery system\backend
+14 verbose os Windows_NT 10.0.26200
+15 verbose node v22.14.0
+16 verbose npm  v10.9.2
+17 verbose exit 0
+18 info ok

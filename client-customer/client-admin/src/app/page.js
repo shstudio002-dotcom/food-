@@ -30,8 +30,12 @@ export default function AdminLiveOrders() {
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
 
-    // Listen for real-time order updates via Socket.io
-    const socket = io(API_URL);
+    // Socket.io connection with polling fallback for stable connectivity
+    const socket = io(API_URL, {
+      transports: ['polling', 'websocket'],
+      secure: true,
+    });
+
     socket.on('orderStatusUpdated', () => {
       fetchOrders();
     });
@@ -42,10 +46,8 @@ export default function AdminLiveOrders() {
   }, []);
 
   const handleCheckpointUpdate = (orderId, newStatus, newProgress) => {
-    if (newProgress === 100) {
-      handleDeleteOrder(orderId);
-      return;
-    }
+    // Optimistic UI update for instant speed
+    setOrders(prev => prev.map(o => (o._id === orderId || o.id === orderId) ? { ...o, status: newStatus, progress: newProgress } : o));
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
 
@@ -57,23 +59,25 @@ export default function AdminLiveOrders() {
       .then(() => fetchOrders())
       .catch((err) => {
         console.error('Failed to update checkpoint:', err);
-        setOrders(prev => prev.map(o => (o._id === orderId || o.id === orderId) ? { ...o, status: newStatus, progress: newProgress } : o));
+        fetchOrders(); // Revert on failure
       });
   };
 
   const handleDeleteOrder = (orderId) => {
+    // Optimistic UI filter for instant speed
+    setOrders(prev => prev.filter(o => o._id !== orderId && o.id !== orderId));
+
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
 
     fetch(`${API_URL}/api/orders/${orderId}`, {
       method: 'DELETE'
     })
       .then(() => {
-        setOrders(prev => prev.filter(o => o._id !== orderId && o.id !== orderId));
         fetchOrders();
       })
       .catch((err) => {
         console.error('Failed to delete order:', err);
-        setOrders(prev => prev.filter(o => o._id !== orderId && o.id !== orderId));
+        fetchOrders();
       });
   };
 
@@ -153,7 +157,7 @@ export default function AdminLiveOrders() {
                     <p className="text-[11px] text-slate-600 truncate max-w-[210px]">📍 {ord.address || '[GPS Location]'}</p>
                     <button
                       onClick={() => handleOpenGoogleMaps(ord.address)}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center space-x-1 shrink-0 active:scale-95"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center space-x-1 shrink-0 active:scale-95 cursor-pointer"
                     >
                       <span>🗺️ Track Live Map</span>
                     </button>
@@ -166,27 +170,27 @@ export default function AdminLiveOrders() {
                   <div className="grid grid-cols-2 gap-1.5">
                     <button 
                       onClick={() => handleCheckpointUpdate(orderId, 'Hub', 0)}
-                      className={`py-2 px-3 rounded-xl text-[10px] font-bold border transition ${ord.progress === 0 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+                      className={`py-2 px-3 rounded-xl text-[10px] font-bold border transition cursor-pointer active:scale-95 ${ord.progress === 0 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
                     >
                       1. Hub (0%)
                     </button>
                     <button 
                       onClick={() => handleCheckpointUpdate(orderId, 'Picked', 35)}
-                      className={`py-2 px-3 rounded-xl text-[10px] font-bold border transition ${ord.progress === 35 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+                      className={`py-2 px-3 rounded-xl text-[10px] font-bold border transition cursor-pointer active:scale-95 ${ord.progress === 35 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
                     >
                       2. Picked (35%)
                     </button>
                     <button 
                       onClick={() => handleCheckpointUpdate(orderId, 'Near Area', 70)}
-                      className={`py-2 px-3 rounded-xl text-[10px] font-bold border transition ${ord.progress === 70 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+                      className={`py-2 px-3 rounded-xl text-[10px] font-bold border transition cursor-pointer active:scale-95 ${ord.progress === 70 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
                     >
                       3. Near Area (70%)
                     </button>
                     <button 
                       onClick={() => handleCheckpointUpdate(orderId, 'Delivered', 100)}
-                      className="py-2 px-3 rounded-xl text-[10px] font-bold border bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 transition shadow-sm"
+                      className={`py-2 px-3 rounded-xl text-[10px] font-bold border transition cursor-pointer active:scale-95 ${ord.progress === 100 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'}`}
                     >
-                      4. Delivered & Clear 🗑️
+                      4. Delivered (100%)
                     </button>
                   </div>
                 </div>
@@ -218,7 +222,7 @@ export default function AdminLiveOrders() {
                   <span className="text-slate-500 font-medium">Payment: <strong className="text-slate-900">{ord.paymentMode || 'COD'}</strong></span>
                   <button 
                     onClick={() => handleDeleteOrder(orderId)}
-                    className="text-rose-600 hover:text-rose-700 font-bold text-[10px] bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 transition"
+                    className="text-rose-600 hover:text-rose-700 font-bold text-[10px] bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 transition cursor-pointer active:scale-95"
                   >
                     Remove from DB ✕
                   </button>

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 
 const categories = [
   { id: 'all', name: 'All Items', icon: '🌟' },
+  { id: 'Hotels', name: 'Hotels', icon: '🏨' },
   { id: 'Breakfast', name: 'Breakfast', icon: '🥞' },
   { id: 'Veg', name: 'Veg', icon: '🥗' },
   { id: 'Non-Veg', name: 'Non-Veg', icon: '🍗' },
@@ -20,6 +21,7 @@ export default function Home() {
   
   const [hotelsList, setHotelsList] = useState([]);
   const [foodItemsList, setFoodItemsList] = useState([]);
+  const [bannerData, setBannerData] = useState({ title: '', subtitle: '', Delivery: '', deliveryFee: '', bgMedia: '', mediaType: '' });
   const [cart, setCart] = useState({});
   const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -34,38 +36,94 @@ export default function Home() {
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
 
-    // Fetch live restaurants from backend
-    fetch(`${API_URL}/api/restaurants`)
+    // Fetch live banner/offer data from backend
+    fetch(`${API_URL}/api/offers`)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          setHotelsList(data);
-        } else {
-          fetch(`${API_URL}/api/foods/restaurants`)
-            .then(r => r.json())
-            .then(hData => {
-              if (Array.isArray(hData)) setHotelsList(hData);
-            })
-            .catch(() => {});
+        if (data) {
+          setBannerData({
+            title: data.title || '',
+            subtitle: data.subtitle || '',
+            Delivery: data.Delivery || '',
+            deliveryFee: data.deliveryFee || '',
+            bgMedia: data.bgMedia || '',
+            mediaType: data.mediaType || ''
+          });
         }
       })
-      .catch(err => {
-        console.error('Failed to fetch restaurants:', err);
-        fetch(`${API_URL}/api/foods/restaurants`)
-          .then(r => r.json())
-          .then(hData => {
-            if (Array.isArray(hData)) setHotelsList(hData);
-          })
-          .catch(() => {});
-      });
+      .catch(() => {});
 
-    // Fetch live food menu catalog from backend
-    fetch(`${API_URL}/api/foods`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setFoodItemsList(data);
-      })
-      .catch(err => console.error('Failed to fetch food catalog:', err));
+    // Function to load fresh restaurant and food catalogs from backend
+    const loadCatalogData = async () => {
+      let fetchedHotels = [];
+
+      try {
+        const res = await fetch(`${API_URL}/api/restaurants`);
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          fetchedHotels = data;
+        } else {
+          const resAlt = await fetch(`${API_URL}/api/foods/restaurants`);
+          const dataAlt = await resAlt.json();
+          if (Array.isArray(dataAlt) && dataAlt.length > 0) {
+            fetchedHotels = dataAlt;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch restaurants:', err);
+      }
+
+      try {
+        const foodRes = await fetch(`${API_URL}/api/foods`);
+        const foodData = await foodRes.json();
+        if (Array.isArray(foodData)) {
+          setFoodItemsList(foodData);
+          
+          const hotelMap = {};
+          
+          fetchedHotels.forEach(h => {
+            const hName = h.name || h.hotelName || h.restaurantName || h.title;
+            if (hName) {
+              hotelMap[hName.toLowerCase()] = {
+                ...h,
+                name: hName,
+                // 🏨 Strictly map hotel store logo/image
+                image: h.image || h.logo || h.hotelImage || h.restaurantImage || ''
+              };
+            }
+          });
+
+          foodData.forEach(item => {
+            const hName = item.hotelName || item.restaurant || item.restaurantName || item.title;
+            if (hName) {
+              const key = hName.toLowerCase();
+              if (!hotelMap[key]) {
+                hotelMap[key] = {
+                  id: item.hotelId || hName,
+                  name: hName,
+                  // 🏨 Use hotel-specific image fields, never fallback to the food dish image
+                  image: item.hotelImage || item.restaurantImage || '',
+                  address: item.address || 'Shivamogga Hub',
+                  isOpen: true,
+                  cuisine: item.category ? [item.category] : ['Multi-Cuisine']
+                };
+              } else if (!hotelMap[key].image && (item.hotelImage || item.restaurantImage)) {
+                hotelMap[key].image = item.hotelImage || item.restaurantImage;
+              }
+            }
+          });
+
+          setHotelsList(Object.values(hotelMap));
+        } else {
+          setHotelsList(fetchedHotels);
+        }
+      } catch (err) {
+        console.error('Failed to fetch food catalog:', err);
+        setHotelsList(fetchedHotels);
+      }
+    };
+
+    loadCatalogData();
 
     try {
       const savedCart = localStorage.getItem('shopmatries_cart');
@@ -76,23 +134,6 @@ export default function Home() {
       console.error('Failed to load cart from storage', e);
     }
   }, [router]);
-
-  // Automatically hide or show bottom nav bar based on cart items
-  useEffect(() => {
-    const navBar = document.getElementById('bottom-nav-bar');
-    const totalCount = Object.values(cart).reduce((a, b) => a + b, 0);
-    if (navBar) {
-      if (totalCount > 0) {
-        navBar.style.transform = 'translateY(100%)';
-        navBar.style.opacity = '0';
-        navBar.style.pointerEvents = 'none';
-      } else {
-        navBar.style.transform = 'translateY(0%)';
-        navBar.style.opacity = '1';
-        navBar.style.pointerEvents = 'auto';
-      }
-    }
-  }, [cart]);
 
   const updateCartStorage = (newCart) => {
     setCart(newCart);
@@ -146,7 +187,7 @@ export default function Home() {
   // Safe Filter Logic mapping restaurant names and food fields
   const filteredItems = foodItemsList.filter(item => {
     const hotelRefId = item.hotelId;
-    const hotelNameField = item.hotelName || '';
+    const hotelNameField = item.hotelName || item.restaurant || item.restaurantName || '';
     const itemName = item.englishName || item.name || item.dishName || '';
     const kannadaName = item.kannadaName || '';
     const query = searchQuery ? searchQuery.toLowerCase() : '';
@@ -154,9 +195,14 @@ export default function Home() {
     const matchesSearch = itemName.toLowerCase().includes(query) || kannadaName.toLowerCase().includes(query);
     
     if (selectedHotel) {
+      const hotelDisplayName = selectedHotel.name || selectedHotel.hotelName || selectedHotel.restaurantName || '';
       const matchesHotelId = hotelRefId && String(hotelRefId) === String(selectedHotel._id || selectedHotel.id);
-      const matchesHotelName = hotelNameField && selectedHotel.name && (hotelNameField.toLowerCase() === selectedHotel.name.toLowerCase());
+      const matchesHotelName = hotelNameField && hotelDisplayName && (hotelNameField.toLowerCase() === hotelDisplayName.toLowerCase());
       return (matchesHotelId || matchesHotelName) && matchesSearch;
+    }
+
+    if (selectedCategory === 'Hotels') {
+      return matchesSearch;
     }
 
     const matchesCategory = selectedCategory === 'all' || item.category?.toLowerCase() === selectedCategory.toLowerCase();
@@ -166,72 +212,104 @@ export default function Home() {
   return (
     <div className="relative pb-36 bg-white min-h-screen">
       
-      {/* 1. TOP GREEN NOTIFICATION BAR */}
-      <div className="bg-emerald-800 text-white text-[11px] px-3 py-2 flex justify-between items-center font-medium shadow-inner">
-        <div className="flex items-center space-x-1.5 truncate">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span className="truncate">Get food in 30 mins • Under 30 min guarantee</span>
-        </div>
-        <div className="shrink-0 bg-emerald-900/80 px-2 py-0.5 rounded text-[10px] border border-emerald-700">
-          📍 Shivamogga Hub
-        </div>
-      </div>
-
-      {/* 2. STATIONARY HEADER, LOGO, QUICK MENU & OFFERS BANNER */}
-      <div className="sticky top-0 bg-white z-30 px-4 pt-3 pb-2 space-y-2.5 border-b border-slate-100 shadow-sm">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <svg className="w-7 h-7 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="6" width="20" height="14" rx="2" />
-              <line x1="10" y1="10" x2="10" y2="20" />
-              <line x1="2" y1="10" x2="22" y2="10" />
-              <path d="M10 6V4a2 2 0 0 1 4 0v2" />
-            </svg>
-            <h1 className="text-lg font-black tracking-tight text-slate-900">
-              Shop<span className="text-emerald-600">matries</span>
-            </h1>
+      {/* 🔒 STATIONARY STICKY TOP CONTAINER (Pins both the Green Bar and Header to the top on scroll) */}
+      <div className="sticky top-0 bg-white z-40 shadow-sm">
+        
+        {/* 1. TOP GREEN NOTIFICATION BAR */}
+        <div className="bg-emerald-800 text-white text-[11px] px-3 py-2 flex justify-between items-center font-medium shadow-inner">
+          <div className="flex items-center space-x-1.5 truncate">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span className="truncate">Get food in 30 mins • Under 30 min guarantee</span>
           </div>
-          <button 
-            onClick={() => router.push('/quick-menu')}
-            className="border border-emerald-200 bg-emerald-50 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-sm hover:bg-emerald-100 transition active:scale-95 cursor-pointer"
-          >
-            ⚡ Quick Menu
-          </button>
-        </div>
-
-        {/* Offers Banner */}
-        <div className="relative bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 rounded-2xl p-3 text-white shadow-md overflow-hidden flex justify-between items-center">
-          <div className="z-10 space-y-0.5">
-            <span className="bg-amber-400 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">Offer</span>
-            <h2 className="text-xs font-black tracking-tight">FLAT 50% OFF</h2>
-            <p className="text-[10px] text-slate-300">On your first 3 food orders!</p>
-          </div>
-          <div className="z-10 text-right bg-black/40 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10">
-            <p className="text-[8px] text-emerald-400 font-bold uppercase">Speed</p>
-            <p className="text-xs font-black text-white">30 Min</p>
+          <div className="shrink-0 bg-emerald-900/80 px-2 py-0.5 rounded text-[10px] border border-emerald-700">
+            📍 Shivamogga Hub
           </div>
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex space-x-2 overflow-x-auto pb-1 scrollbar-none">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => {
-                setSelectedCategory(cat.id);
-                setSelectedHotel(null);
-              }}
-              className={`flex items-center space-x-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 border ${
-                selectedCategory === cat.id && !selectedHotel
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
-                  : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-              }`}
+        {/* 2. STATIONARY HEADER, LOGO, QUICK MENU & OFFERS BANNER */}
+        <div className="px-4 pt-3 pb-2 space-y-2.5 border-b border-slate-100">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <svg className="w-7 h-7 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="6" width="20" height="14" rx="2" />
+                <line x1="10" y1="10" x2="10" y2="20" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+                <path d="M10 6V4a2 2 0 0 1 4 0v2" />
+              </svg>
+              <h1 className="text-lg font-black tracking-tight text-slate-900">
+                Shop<span className="text-emerald-600">matries</span>
+              </h1>
+            </div>
+            <button 
+              onClick={() => router.push('/quick-menu')}
+              className="border border-emerald-200 bg-emerald-50 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-sm hover:bg-emerald-100 transition active:scale-95 cursor-pointer"
             >
-              <span>{cat.icon}</span>
-              <span>{cat.name}</span>
+              ⚡ Quick Menu
             </button>
-          ))}
+          </div>
+
+          {/* Dynamic Backend Offers & Media Banner */}
+          <div className="relative rounded-2xl p-3 text-white shadow-md overflow-hidden bg-slate-900 min-h-[90px] flex justify-between items-center">
+            
+            {/* Dynamic Background Media Layer */}
+            {bannerData.bgMedia ? (
+              bannerData.mediaType === 'video' ? (
+                <video 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline 
+                  className="absolute inset-0 w-full h-full object-cover z-0 opacity-60"
+                >
+                  <source src={bannerData.bgMedia} />
+                </video>
+              ) : (
+                <div 
+                  className="absolute inset-0 w-full h-full bg-cover bg-center z-0 opacity-50"
+                  style={{ backgroundImage: `url(${bannerData.bgMedia})` }}
+                ></div>
+              )
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 z-0"></div>
+            )}
+
+            {/* Dark Overlay for text contrast */}
+            <div className="absolute inset-0 bg-slate-950/40 z-0"></div>
+
+            <div className="z-10 space-y-0.5">
+              <span className="bg-amber-400 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded uppercase font-mono">Offer</span>
+              <h2 className="text-xs font-black tracking-tight">{bannerData.title || 'FLAT 50% OFF'}</h2>
+              <p className="text-[10px] text-slate-200">{bannerData.subtitle || 'On your first 3 food orders!'}</p>
+            </div>
+
+            <div className="z-10 text-right bg-black/40 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10">
+              <p className="text-[8px] text-emerald-400 font-bold uppercase">Delivery</p>
+              <p className="text-xs font-black text-white">{bannerData.Delivery || 'Free'}</p>
+            </div>
+          </div>
+
+          {/* Category Filter Pills */}
+          <div className="flex space-x-2 overflow-x-auto pb-1 scrollbar-none">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  setSelectedCategory(cat.id);
+                  setSelectedHotel(null);
+                }}
+                className={`flex items-center space-x-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 border cursor-pointer ${
+                  selectedCategory === cat.id && !selectedHotel
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
+
       </div>
 
       {/* 3. SCROLLABLE CONTENT AREA */}
@@ -242,14 +320,14 @@ export default function Home() {
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">🔍</span>
           <input
             type="text"
-            placeholder={selectedHotel ? `Search in ${selectedHotel.name}...` : "Search for biryani, dosa, meals..."}
+            placeholder={selectedHotel ? `Search in ${selectedHotel.name || selectedHotel.hotelName || 'Midari hotel'}...` : "Search for biryani, dosa, meals..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
           />
         </div>
 
-        {/* RESTAURANTS VIEW (When 'Restaurants' category is chosen) */}
+        {/* RESTAURANTS VIEW (When 'Hotels' category is chosen and no specific hotel is opened) */}
         {selectedCategory === 'Hotels' && !selectedHotel ? (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -270,7 +348,10 @@ export default function Home() {
               ) : (
                 hotelsList.map((hotel) => {
                   const hotelId = hotel._id || hotel.id;
+                  const hotelDisplayName = hotel.name || hotel.hotelName || hotel.restaurantName || hotel.title || 'Midari hotel';
+                  const hotelAddress = hotel.address || hotel.location || 'Shivamogga Hub';
                   const cuisineList = Array.isArray(hotel.cuisine) ? hotel.cuisine.join(', ') : (hotel.cuisine || 'Multi-Cuisine');
+                  const hotelImg = hotel.image || hotel.logo || hotel.hotelImage || hotel.restaurantImage || '';
 
                   return (
                     <div 
@@ -278,19 +359,19 @@ export default function Home() {
                       onClick={() => setSelectedHotel(hotel)}
                       className="bg-white border border-slate-200 hover:border-emerald-500 rounded-2xl p-3 shadow-sm flex items-center space-x-3 cursor-pointer transition active:scale-[0.99]"
                     >
-                      {hotel.image ? (
-                        <img src={hotel.image} alt={hotel.name} className="w-16 h-16 rounded-xl object-cover border border-slate-100" />
+                      {hotelImg ? (
+                        <img src={hotelImg} alt={hotelDisplayName} className="w-16 h-16 rounded-xl object-cover border border-slate-100" />
                       ) : (
                         <div className="w-16 h-16 bg-emerald-50 rounded-xl flex items-center justify-center text-2xl border border-emerald-100">🏨</div>
                       )}
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
-                          <h4 className="font-extrabold text-slate-900 text-xs">{hotel.name}</h4>
+                          <h4 className="font-extrabold text-slate-900 text-xs">{hotelDisplayName}</h4>
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${hotel.isOpen !== false ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
                             {hotel.isOpen !== false ? '🟢 Open' : '🔴 Closed'}
                           </span>
                         </div>
-                        <p className="text-[10px] text-slate-500 mt-0.5 truncate">📍 {hotel.address}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5 truncate">📍 {hotelAddress}</p>
                         <p className="text-[9px] text-slate-400 mt-0.5">🍴 {cuisineList}</p>
                         <p className="text-[9px] text-emerald-600 font-bold mt-1">Tap to view restaurant menu ➔</p>
                       </div>
@@ -307,7 +388,7 @@ export default function Home() {
               <div>
                 <h3 className="font-extrabold text-slate-900 text-xs flex items-center space-x-1">
                   <span>🍔</span>
-                  <span>{selectedHotel ? `${selectedHotel.name} Menu` : 'Food Catalog (ಆಹಾರ ಪದಾರ್ಥಗಳು)'}</span>
+                  <span>{selectedHotel ? `${selectedHotel.name || selectedHotel.hotelName || 'Midari hotel'} Menu` : 'Food Catalog (ಆಹಾರ ಪದಾರ್ಥಗಳು)'}</span>
                 </h3>
                 {selectedHotel && (
                   <button 
@@ -326,7 +407,7 @@ export default function Home() {
             <div className="grid grid-cols-2 gap-2.5">
               {filteredItems.length === 0 ? (
                 <div className="col-span-2 text-center py-12 text-slate-400 text-xs font-bold bg-slate-50 border border-slate-100 rounded-2xl">
-                  {selectedHotel ? `No dishes found for ${selectedHotel.name}.` : 'No food dishes found in this category.'}
+                  {selectedHotel ? `No dishes found for this restaurant.` : 'No food dishes found in this category.'}
                 </div>
               ) : (
                 filteredItems.map((item) => {
@@ -335,6 +416,7 @@ export default function Home() {
                   
                   const displayName = item.englishName || item.name || item.dishName || 'Food Item';
                   const displayKannada = item.kannadaName || '';
+                  const itemHotelName = item.hotelName || item.restaurant || item.restaurantName || 'Midari hotel';
 
                   return (
                     <div key={itemId} className="bg-white border border-slate-200 rounded-2xl p-2.5 shadow-sm flex flex-col justify-between transition hover:shadow-md">
@@ -357,7 +439,7 @@ export default function Home() {
                         )}
                         
                         <p className="text-[9px] text-emerald-700 font-bold truncate mt-0.5">
-                          🏨 {item.hotelName || 'Partner Restaurant'}
+                          🏨 {itemHotelName}
                         </p>
                       </div>
 
@@ -404,7 +486,7 @@ export default function Home() {
 
       {/* 4. FLOATING CHECKOUT BAR */}
       {totalItemsCount > 0 && (
-        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[94%] max-w-[390px] bg-slate-950 text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between z-50 border border-slate-800 animate-slideUp">
+        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[94%] max-w-[390px] bg-slate-950 text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between z-40 border border-slate-800 animate-slideUp">
           <div className="flex items-center space-x-2.5">
             <div className="bg-emerald-600 text-white w-8 h-8 rounded-xl flex items-center justify-center shadow font-black text-xs">
               {totalItemsCount}

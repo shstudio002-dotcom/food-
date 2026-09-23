@@ -6,11 +6,12 @@ export default function AdminOffersPage() {
     tag: 'FLAT 50% OFF',
     title: 'FLAT 50% OFF',
     subtitle: 'On your first 3 food orders!',
-    speed: '30 Min',
+    Delivery: 'Free',
     bgMedia: '',
     mediaType: '' // 'image' or 'video'
   });
   const [saved, setSaved] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   // Fetch initial banner/offer data from backend
   useEffect(() => {
@@ -31,20 +32,48 @@ export default function AdminOffersPage() {
       });
   }, []);
 
-  // Handle direct file selection from device (Image or Video)
-  const handleMediaUpload = (e) => {
+  // Helper function to upload files directly from frontend to Cloudinary
+  const uploadDirectToCloudinary = async (file) => {
+    const cloudName = 'divin440';
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'shopmatries_preset';
+
+    const data = new FormData();
+    data.append('file', file);
+    data.append('upload_preset', uploadPreset);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+        method: 'POST',
+        body: data,
+      });
+      const json = await res.json();
+      if (json.secure_url) {
+        return json.secure_url;
+      } else {
+        throw new Error(json.error?.message || 'Upload failed');
+      }
+    } catch (err) {
+      console.error('Cloudinary upload error:', err);
+      alert('Failed to upload media to Cloudinary.');
+      return null;
+    }
+  };
+
+  // Handle direct file selection from device (Image or Video) and upload to Cloudinary
+  const handleMediaUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       const isVideo = file.type.startsWith('video');
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      setUploadingMedia(true);
+      const secureUrl = await uploadDirectToCloudinary(file);
+      if (secureUrl) {
         setOffer(prev => ({
           ...prev,
-          bgMedia: reader.result,
+          bgMedia: secureUrl,
           mediaType: isVideo ? 'video' : 'image'
         }));
-      };
-      reader.readAsDataURL(file);
+      }
+      setUploadingMedia(false);
     }
   };
 
@@ -112,8 +141,8 @@ export default function AdminOffersPage() {
           </div>
 
           <div className="z-10 text-center bg-slate-900/80 border border-slate-700 p-2 rounded-xl backdrop-blur-md">
-            <span className="text-[9px] font-bold text-emerald-400 uppercase block">SPEED</span>
-            <span className="text-xs font-black">{offer.speed}</span>
+            <span className="text-[9px] font-bold text-emerald-400 uppercase block">Delivery</span>
+            <span className="text-xs font-black">{offer.Delivery}</span>
           </div>
 
         </div>
@@ -172,9 +201,13 @@ export default function AdminOffersPage() {
           />
         </div>
 
+        {uploadingMedia && (
+          <p className="text-[10px] text-emerald-600 font-bold animate-pulse">Uploading media to Cloudinary...</p>
+        )}
+
         <button 
           type="submit"
-          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition active:scale-95"
+          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition active:scale-95 cursor-pointer"
         >
           Save Banner Changes ⚡
         </button>

@@ -14,7 +14,8 @@ export default function RootLayout({ children }) {
   }, []);
 
   const isAdminRoute = pathname?.startsWith('/admin');
-  const hideNavBar = !mounted || pathname === '/login' || pathname === '/register' || isAdminRoute;
+  const isAuthRoute = pathname === '/login' || pathname === '/register' || pathname === '/admin-login';
+  const hideNavBar = !mounted || isAuthRoute || isAdminRoute;
 
   // During SSR / initial load, render a stable base wrapper to match client layout
   if (!mounted) {
@@ -59,7 +60,7 @@ export default function RootLayout({ children }) {
               {children}
             </main>
 
-            {/* Stationary Bottom Function & Navigation Bar (Hidden only on Login, Register, & Admin) */}
+            {/* Stationary Bottom Function & Navigation Bar (Hidden on Login, Register, Admin Login, & Admin Routes) */}
             {!hideNavBar && (
               <nav 
                 id="bottom-nav-bar"

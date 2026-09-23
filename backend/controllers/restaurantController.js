@@ -13,7 +13,7 @@ exports.getFoods = async (req, res) => {
 // Add new food dish
 exports.addFood = async (req, res) => {
   try {
-    const { kannadaName, englishName, name, category, price, image } = req.body;
+    const { kannadaName, englishName, name, category, hotelImage, price, image, } = req.body;
     const dishName = englishName || name;
 
     const newFood = new FoodItem({

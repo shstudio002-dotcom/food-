@@ -14,14 +14,12 @@ export default function OrdersPage() {
 
     const fetchOrders = async () => {
       try {
-        // Retrieve the unique logged-in user phone number for account isolation
         const userPhone = localStorage.getItem('shopmatries_phone');
         
         const response = await fetch(`${API_URL}/api/orders${userPhone ? `?phone=${userPhone}` : ''}`);
         const data = await response.json();
         
         if (response.ok && Array.isArray(data)) {
-          // Filter strictly by user phone to ensure account data isolation
           const isolatedOrders = userPhone 
             ? data.filter(ord => !ord.phone || ord.phone === userPhone)
             : data;
@@ -39,12 +37,33 @@ export default function OrdersPage() {
 
     fetchOrders();
 
-    const socket = io(API_URL);
+    // ⚡ Robust Socket.io connection with polling fallback for instant synchronization
+    const socket = io(API_URL, {
+      transports: ['polling', 'websocket'],
+      secure: true,
+    });
 
-    socket.on('orderStatusUpdated', ({ orderId, newStatus }) => {
+    socket.on('orderStatusUpdated', (payload) => {
+      // Safely handle both object destructuring and raw order object payloads from backend
+      const targetOrderId = payload?.orderId || payload?._id || payload?.id;
+      const targetStatus = payload?.newStatus || payload?.status;
+      const targetProgress = payload?.newProgress !== undefined ? payload?.newProgress : payload?.progress;
+
       setOrders(prevOrders => 
-        prevOrders.map(ord => (ord._id === orderId || ord.id === orderId) ? { ...ord, status: newStatus } : ord)
+        prevOrders.map(ord => {
+          const currentId = ord._id || ord.id;
+          if (String(currentId) === String(targetOrderId)) {
+            return { 
+              ...ord, 
+              status: targetStatus || ord.status, 
+              progress: targetProgress !== undefined ? targetProgress : ord.progress 
+            };
+          }
+          return ord;
+        })
       );
+      // Re-fetch instantly to ensure total consistency with database state
+      fetchOrders();
     });
 
     socket.on('deliveryPartnerLocationUpdate', ({ orderId, lat, lng }) => {
@@ -59,26 +78,31 @@ export default function OrdersPage() {
     };
   }, []);
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, progress) => {
+    if (progress === 100 || status === 'Delivered') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
     switch (status) {
-      case 'Pending': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'Pending': 
+      case 'Hub': return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'Accepted': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Preparing': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'Out for Delivery': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'Delivered': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'Preparing': 
+      case 'Picked': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Out for Delivery': 
+      case 'Near Area': return 'bg-orange-100 text-orange-800 border-orange-200';
       default: return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
 
-  const getProgressDetails = (status) => {
-    switch (status) {
-      case 'Pending': return { percent: '0%', label: '1. Hub (0%)', eta: '30-40 Mins' };
-      case 'Accepted': 
-      case 'Preparing': return { percent: '35%', label: '2. Picked (35%)', eta: '25-30 Mins' };
-      case 'Out for Delivery': return { percent: '70%', label: '3. Near Area (70%)', eta: '10-15 Mins' };
-      case 'Delivered': return { percent: '100%', label: '4. Delivered (100%)', eta: 'Arrived' };
-      default: return { percent: '0%', label: 'Hub (0%)', eta: '30 Mins' };
+  const getProgressDetails = (status, progressValue) => {
+    if (progressValue === 100 || status === 'Delivered') {
+      return { percent: '100%', label: '4. Delivered Successfully 🎉', eta: 'Arrived' };
     }
+    if (progressValue === 70 || status === 'Near Area' || status === 'Out for Delivery') {
+      return { percent: '70%', label: '3. Near Area (70%)', eta: '10-15 Mins' };
+    }
+    if (progressValue === 35 || status === 'Picked' || status === 'Preparing') {
+      return { percent: '35%', label: '2. Picked (35%)', eta: '25-30 Mins' };
+    }
+    return { percent: '0%', label: '1. Hub (0%)', eta: '30-40 Mins' };
   };
 
   return (
@@ -102,7 +126,7 @@ export default function OrdersPage() {
           <p className="text-slate-500 font-medium text-xs">You have not placed any orders from this account yet.</p>
           <button
             onClick={() => router.push('/')}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition cursor-pointer active:scale-95"
           >
             Browse Food Storefront ➔
           </button>
@@ -111,10 +135,12 @@ export default function OrdersPage() {
         <div className="space-y-4">
           {orders.map((order) => {
             const orderId = order._id || order.id;
-            const progress = getProgressDetails(order.status);
+            const currentProgressNum = order.progress !== undefined ? order.progress : (order.status === 'Delivered' ? 100 : 0);
+            const progress = getProgressDetails(order.status, currentProgressNum);
+            const isDelivered = currentProgressNum === 100 || order.status === 'Delivered';
 
             return (
-              <div key={orderId} className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-4">
+              <div key={orderId} className={`bg-white border rounded-2xl p-4 shadow-sm space-y-4 transition ${isDelivered ? 'border-emerald-300 bg-emerald-50/20' : 'border-slate-200/80'}`}>
                 
                 {/* Order Header / ID & Status */}
                 <div className="flex justify-between items-start border-b border-slate-100 pb-3">
@@ -122,8 +148,8 @@ export default function OrdersPage() {
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Order ID</p>
                     <p className="text-xs font-mono font-bold text-slate-700">{orderId}</p>
                   </div>
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full border ${getStatusBadge(order.status)}`}>
-                    {order.status || 'Hub'}
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full border ${getStatusBadge(order.status, currentProgressNum)}`}>
+                    {isDelivered ? 'Delivered Successfully 🏆' : (order.status || 'Hub')}
                   </span>
                 </div>
 
@@ -159,6 +185,12 @@ export default function OrdersPage() {
                     <span>Delivered (100%)</span>
                   </div>
                 </div>
+
+                {isDelivered && (
+                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl text-center text-xs font-bold animate-fadeIn">
+                    🎉 Order Delivered Successfully! Enjoy your meal.
+                  </div>
+                )}
 
                 {/* Drop Address Box */}
                 <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center space-x-2">

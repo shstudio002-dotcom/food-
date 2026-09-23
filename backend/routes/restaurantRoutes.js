@@ -84,6 +84,7 @@ router.post('/', async (req, res) => {
       hotelId,
       hotelName,
       image,
+      hotelImage,
       available: true
     });
 

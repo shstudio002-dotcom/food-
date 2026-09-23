@@ -9,10 +9,13 @@ export default function AdminAddFoodDish() {
     category: 'Hotels',
     hotelId: '',
     hotelNameInput: '', // For manually typing a new hotel name
+    hotelImage: '',     // Photo for the new hotel
     price: '',
-    image: ''
+    image: ''           // Photo for the food dish
   });
   const [message, setMessage] = useState('');
+  const [uploadingFood, setUploadingFood] = useState(false);
+  const [uploadingHotel, setUploadingHotel] = useState(false);
 
   // Fetch partner hotels directly from backend database
   useEffect(() => {
@@ -31,15 +34,56 @@ export default function AdminAddFoodDish() {
       });
   }, []);
 
-  // Handle local image file selection from device and convert to base64
-  const handleImageChange = (e) => {
+  // Helper function to upload files directly from frontend to Cloudinary
+  const uploadDirectToCloudinary = async (file) => {
+    const cloudName = 'divin440';
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'shopmatries_preset';
+
+    const data = new FormData();
+    data.append('file', file);
+    data.append('upload_preset', uploadPreset);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+        method: 'POST',
+        body: data,
+      });
+      const json = await res.json();
+      if (json.secure_url) {
+        return json.secure_url;
+      } else {
+        throw new Error(json.error?.message || 'Upload failed');
+      }
+    } catch (err) {
+      console.error('Cloudinary upload error:', err);
+      alert('Failed to upload image to Cloudinary.');
+      return null;
+    }
+  };
+
+  // Handle food image upload directly to Cloudinary
+  const handleFoodImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, image: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      setUploadingFood(true);
+      const secureUrl = await uploadDirectToCloudinary(file);
+      if (secureUrl) {
+        setFormData(prev => ({ ...prev, image: secureUrl }));
+      }
+      setUploadingFood(false);
+    }
+  };
+
+  // Handle hotel image upload directly to Cloudinary
+  const handleHotelImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUploadingHotel(true);
+      const secureUrl = await uploadDirectToCloudinary(file);
+      if (secureUrl) {
+        setFormData(prev => ({ ...prev, hotelImage: secureUrl }));
+      }
+      setUploadingHotel(false);
     }
   };
 
@@ -51,14 +95,18 @@ export default function AdminAddFoodDish() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
 
     try {
-      // If a new hotel is typed, save it to the database first
+      // If a new hotel is typed, save it along with its specific photo to the database first
       if (formData.hotelId === 'new') {
         const newHotelName = formData.hotelNameInput.trim() || 'New Partner Hotel';
         
         const hotelRes = await fetch(`${API_URL}/api/foods/restaurants`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newHotelName, address: 'Local Area' })
+          body: JSON.stringify({ 
+            name: newHotelName, 
+            address: 'Local Area',
+            image: formData.hotelImage // Strictly sends the hotel logo/store image
+          })
         });
         const hotelData = await hotelRes.json();
         
@@ -76,24 +124,29 @@ export default function AdminAddFoodDish() {
         }
       }
 
-      const payload = {
-        ...formData,
+      // Build a clean payload containing ONLY food-specific properties and the food dish image
+      const foodPayload = {
+        kannadaName: formData.kannadaName,
+        englishName: formData.englishName,
+        category: formData.category,
         hotelId: finalHotelId,
-        hotelName: finalHotelName
+        hotelName: finalHotelName,
+        price: formData.price,
+        image: formData.image // Strictly sends the food dish photo URL
       };
 
       // Submit food dish payload to backend
       const foodRes = await fetch(`${API_URL}/api/foods`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(foodPayload)
       });
       
       const foodData = await foodRes.json();
 
       if (foodRes.ok && foodData.success) {
         setMessage(`✅ Food dish successfully added to "${finalHotelName}" menu!`);
-        setFormData({ kannadaName: '', englishName: '', category: 'Hotels', hotelId: '', hotelNameInput: '', price: '', image: '' });
+        setFormData({ kannadaName: '', englishName: '', category: 'Hotels', hotelId: '', hotelNameInput: '', hotelImage: '', price: '', image: '' });
         setTimeout(() => setMessage(''), 3000);
       } else {
         setMessage(`❌ ${foodData.error || 'Failed to add dish to backend catalog.'}`);
@@ -130,29 +183,55 @@ export default function AdminAddFoodDish() {
           <select 
             value={formData.hotelId}
             onChange={(e) => setFormData({ ...formData, hotelId: e.target.value })}
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500 font-bold"
+            className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500 font-bold cursor-pointer"
             required
           >
             <option value="">-- Choose Existing Hotel --</option>
             {hotels.map(h => {
               const hId = h._id || h.id;
+              const hName = h.name || h.hotelName || h.restaurantName || 'Midari hotel';
               return (
-                <option key={hId} value={hId}>{h.name}</option>
+                <option key={hId} value={hId}>{hName}</option>
               );
             })}
             <option value="new">➕ Type New Hotel Name...</option>
           </select>
 
-          {/* Input field appears if 'Type New Hotel Name' is selected */}
+          {/* Input field and Hotel Photo upload appear only if 'Type New Hotel Name' is selected */}
           {formData.hotelId === 'new' && (
-            <input 
-              type="text"
-              placeholder="Enter new hotel name (e.g. Royal Dine Restaurant)"
-              value={formData.hotelNameInput}
-              onChange={(e) => setFormData({ ...formData, hotelNameInput: e.target.value })}
-              className="w-full bg-emerald-50/50 border border-emerald-300 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500 mt-2 font-bold"
-              required
-            />
+            <div className="space-y-3 pt-1 animate-fadeIn">
+              <div>
+                <input 
+                  type="text"
+                  placeholder="Enter new hotel name (e.g. Midari hotel)"
+                  value={formData.hotelNameInput}
+                  onChange={(e) => setFormData({ ...formData, hotelNameInput: e.target.value })}
+                  className="w-full bg-emerald-50/50 border border-emerald-300 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500 font-bold"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-emerald-800">Hotel Logo / Store Image (ಹೋಟೆಲ್ ಚಿತ್ರ) *</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleHotelImageChange}
+                  className="w-full bg-emerald-50/40 border border-emerald-200 text-slate-600 text-xs rounded-xl p-2 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
+                  required
+                />
+              </div>
+
+              {uploadingHotel && (
+                <p className="text-[10px] text-emerald-600 font-bold animate-pulse">Uploading hotel image to Cloudinary...</p>
+              )}
+
+              {formData.hotelImage && (
+                <div className="relative w-full h-24 bg-slate-100 rounded-xl overflow-hidden border border-emerald-200">
+                  <img src={formData.hotelImage} alt="Hotel Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -186,7 +265,7 @@ export default function AdminAddFoodDish() {
             <select 
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500 cursor-pointer"
             >
               <option value="Hotels">Hotels</option>
               <option value="Breakfast">Breakfast</option>
@@ -211,27 +290,32 @@ export default function AdminAddFoodDish() {
           </div>
         </div>
 
-        {/* Direct Device Image Upload Option */}
+        {/* Food Dish Image Upload Option */}
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-600">Food Image Upload (ಚಿತ್ರ ಆಯ್ಕೆಮಾಡಿ)</label>
+          <label className="text-[10px] font-bold text-slate-600">Food Dish Image Upload (ಆಹಾರದ ಚಿತ್ರ) *</label>
           <input 
             type="file" 
             accept="image/*"
-            onChange={handleImageChange}
+            onChange={handleFoodImageChange}
             className="w-full bg-slate-50 border border-slate-200 text-slate-600 text-xs rounded-xl p-2 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+            required
           />
         </div>
 
-        {/* Image Preview Thumbnail */}
+        {uploadingFood && (
+          <p className="text-[10px] text-emerald-600 font-bold animate-pulse">Uploading food image to Cloudinary...</p>
+        )}
+
+        {/* Food Image Preview Thumbnail */}
         {formData.image && (
           <div className="relative w-full h-32 bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
-            <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+            <img src={formData.image} alt="Food Preview" className="w-full h-full object-cover" />
           </div>
         )}
 
         <button 
           type="submit"
-          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition mt-2 active:scale-95"
+          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition mt-2 active:scale-95 cursor-pointer"
         >
           + Save & Assign Dish to Hotel ⚡
         </button>

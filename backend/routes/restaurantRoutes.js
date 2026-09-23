@@ -66,6 +66,7 @@ router.post('/', async (req, res) => {
     const hotelId = req.body.hotelId || '';
     const hotelName = req.body.hotelName || req.body.hotelNameInput || '';
     const image = req.body.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400';
+    const hotelImage = req.body.hotelImage || ''; // 👈 Fixed: Defined hotelImage safely from payload
 
     if (!englishName || price === undefined || price === null || price === '') {
       return res.status(400).json({ 
@@ -84,7 +85,7 @@ router.post('/', async (req, res) => {
       hotelId,
       hotelName,
       image,
-      hotelImage,
+      hotelImage, // 👈 Now references the defined variable safely
       available: true
     });
 

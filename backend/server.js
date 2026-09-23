@@ -9,7 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const restaurantRoutes = require('./routes/restaurantRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const orderSocket = require('./socket/orderSocket');
-const Offer = require('./models/Offer'); // 👈 Import the Offer model for database persistence
+const Offer = require('./models/Offer'); // Offer model for database persistence
 
 const app = express();
 const server = http.createServer(app);
@@ -38,6 +38,23 @@ app.get('/', (req, res) => {
     message: 'Shopmatries Food Delivery Backend is Live and Running Smoothly! 🚀',
     timestamp: new Date().toISOString()
   });
+});
+
+// 🔐 Admin Login Authentication Endpoint
+app.post('/api/admin/login', (req, res) => {
+  try {
+    const { passcode } = req.body;
+    const adminPasscode = process.env.ADMIN_PASSCODE || 'mahendarmidari';
+
+    if (passcode === adminPasscode) {
+      return res.json({ success: true, token: 'admin_secure_session_active' });
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid passcode' });
+    }
+  } catch (err) {
+    console.error('Server login error:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
 });
 
 // Delivery Fee Endpoints

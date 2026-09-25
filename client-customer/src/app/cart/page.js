@@ -6,7 +6,7 @@ export default function CartPage() {
   const router = useRouter();
   
   const [cartItems, setCartItems] = useState([]);
-  const [address, setAddress] = useState('123, Main Street, Near Tech Park, City');
+  const [address, setAddress] = useState('Detecting exact GPS location...');
   const [gpsCoordinates, setGpsCoordinates] = useState({ lat: null, lng: null });
   const [isDetectingGPS, setIsDetectingGPS] = useState(false);
   const [deliveryType, setDeliveryType] = useState('delivery'); // 'delivery' or 'pickup'
@@ -17,41 +17,33 @@ export default function CartPage() {
   const [customerName, setCustomerName] = useState('Valued Customer');
   const [customerPhone, setCustomerPhone] = useState('9108626303');
 
-  // Automatic GPS Detection on page load
+  // Precise Latitude & Longitude Automatic GPS Detection
   const handleAutoDetectGPS = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
+      setAddress('Shivamogga, Karnataka');
       return;
     }
     setIsDetectingGPS(true);
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const { latitude, longitude } = position.coords;
         setGpsCoordinates({ lat: latitude, lng: longitude });
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          const data = await res.json();
-          if (data && data.display_name) {
-            setAddress(data.display_name);
-          } else {
-            setAddress(`[GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}]`);
-          }
-        } catch (err) {
-          setAddress(`[GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}]`);
-        } finally {
-          setIsDetectingGPS(false);
-        }
-      },
-      () => {
+        setAddress(`[GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}] Exact Location Pin`);
         setIsDetectingGPS(false);
-        alert('⚠️ GPS location is turned off or blocked. Please enable location permissions in your browser settings.');
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      (error) => {
+        console.error('GPS error:', error);
+        setIsDetectingGPS(false);
+        setAddress('Shivamogga Hub (Default)');
+        alert('⚠️ Please enable GPS location permissions in your browser settings so the delivery partner can find your exact spot.');
+      },
+      { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
     );
   };
 
   useEffect(() => {
-    // Automatically trigger GPS location detection upon entering the cart
+    // Automatically trigger exact latitude/longitude GPS detection upon entering the cart
     handleAutoDetectGPS();
 
     // Load logged-in user name and phone from localStorage
@@ -140,7 +132,7 @@ export default function CartPage() {
   const deliveryFee = deliveryType === 'delivery' && subtotal > 0 ? backendDeliveryFee : 0;
   const total = subtotal + deliveryFee;
 
-  // Final step: Save order to backend including exact GPS link for the admin
+  // Final step: Save order to backend including exact GPS latitude/longitude formatting for Google Maps
   const verifyAndSaveOrder = async () => {
     try {
       const activeName = localStorage.getItem('shopmatries_username') || customerName;
@@ -150,7 +142,7 @@ export default function CartPage() {
 
       // Format precise location string with Google Maps link capability for the admin dashboard
       const mapsGeoLink = gpsCoordinates.lat && gpsCoordinates.lng 
-        ? `[Maps: https://www.google.com/maps?q=${gpsCoordinates.lat},${gpsCoordinates.lng}] ` 
+        ? `[GPS: ${gpsCoordinates.lat}, ${gpsCoordinates.lng}] ` 
         : '';
       const finalRecordedAddress = deliveryType === 'delivery' ? `${mapsGeoLink}${address}` : 'Store Pickup';
 
@@ -268,12 +260,12 @@ export default function CartPage() {
           {deliveryType === 'delivery' && (
             <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">📍 Delivery Address</label>
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">📍 Exact GPS Coordinates Pin</label>
                 <button onClick={handleDetectGPS} disabled={isDetectingGPS} className="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
-                  <span>{isDetectingGPS ? '🛰️ Detecting...' : '📡 Use GPS Location'}</span>
+                  <span>{isDetectingGPS ? '🛰️ Capturing Pin...' : '📡 Re-detect Exact GPS'}</span>
                 </button>
               </div>
-              <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Type address..." className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none" rows="2" />
+              <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="GPS Lat/Long coordinates..." className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 font-mono focus:outline-none" rows="2" />
             </div>
           )}
 

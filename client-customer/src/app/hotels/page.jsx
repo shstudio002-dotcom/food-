@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 
 export default function CustomerHotelsPage() {
   const [hotels, setHotels] = useState({});
+  const [hotelImages, setHotelImages] = useState({});
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -15,14 +16,23 @@ export default function CustomerHotelsPage() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          // Group food dishes by hotel name
-          const grouped = data.reduce((acc, item) => {
+          // Group food dishes by hotel name and capture hotel images
+          const grouped = {};
+          const images = {};
+
+          data.forEach(item => {
             const hotelName = item.hotelName || item.restaurant || 'Featured Restaurant';
-            if (!acc[hotelName]) acc[hotelName] = [];
-            acc[hotelName].push(item);
-            return acc;
-          }, {});
+            if (!grouped[hotelName]) grouped[hotelName] = [];
+            grouped[hotelName].push(item);
+
+            // Capture hotel logo/image if present
+            if (item.hotelImage || item.restaurantImage) {
+              images[hotelName] = item.hotelImage || item.restaurantImage;
+            }
+          });
+
           setHotels(grouped);
+          setHotelImages(images);
         }
       })
       .catch(err => console.error('Failed to load menu items:', err))
@@ -55,50 +65,58 @@ export default function CustomerHotelsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {Object.entries(hotels).map(([hotelName, foods]) => (
-            <div key={hotelName} className="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm space-y-3">
-              
-              {/* Hotel Banner Header */}
-              <div className="flex justify-between items-center cursor-pointer" onClick={() => setSelectedHotel(selectedHotel === hotelName ? null : hotelName)}>
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-black text-lg border border-emerald-100 shadow-inner">
-                    🏨
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-black text-slate-900">{hotelName}</h2>
-                    <p className="text-[11px] text-emerald-600 font-bold">{foods.length} items available • Tap to view menu</p>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-slate-400">
-                  {selectedHotel === hotelName ? '▲ Hide' : '▼ View Menu'}
-                </span>
-              </div>
+          {Object.entries(hotels).map(([hotelName, foods]) => {
+            const storeImg = hotelImages[hotelName];
 
-              {/* Expandable Food Menu for this Specific Hotel */}
-              {selectedHotel === hotelName && (
-                <div className="space-y-2 pt-3 border-t border-slate-100 animate-fadeIn">
-                  {foods.map((food, idx) => (
-                    <div key={food._id || idx} className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-bold text-slate-900">{food.name || food.englishName}</p>
-                        <p className="text-[10px] text-slate-400 font-mono">₹{food.price || food.basePrice}</p>
+            return (
+              <div key={hotelName} className="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm space-y-3">
+                
+                {/* Hotel Banner Header */}
+                <div className="flex justify-between items-center cursor-pointer" onClick={() => setSelectedHotel(selectedHotel === hotelName ? null : hotelName)}>
+                  <div className="flex items-center space-x-3">
+                    {storeImg ? (
+                      <img src={storeImg} alt={hotelName} className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shadow-inner" />
+                    ) : (
+                      <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-black text-lg border border-emerald-100 shadow-inner">
+                        🏨
                       </div>
-                      <button 
-                        onClick={() => {
-                          // Optional: Add to cart logic directly from hotel view
-                          alert(`Added ${food.name} to cart!`);
-                        }}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black px-3 py-1.5 rounded-xl shadow transition cursor-pointer active:scale-95"
-                      >
-                        + Add
-                      </button>
+                    )}
+                    <div>
+                      <h2 className="text-sm font-black text-slate-900">{hotelName}</h2>
+                      <p className="text-[11px] text-emerald-600 font-bold">{foods.length} items available • Tap to view menu</p>
                     </div>
-                  ))}
+                  </div>
+                  <span className="text-xs font-bold text-slate-400">
+                    {selectedHotel === hotelName ? '▲ Hide' : '▼ View Menu'}
+                  </span>
                 </div>
-              )}
 
-            </div>
-          ))}
+                {/* Expandable Food Menu for this Specific Hotel */}
+                {selectedHotel === hotelName && (
+                  <div className="space-y-2 pt-3 border-t border-slate-100 animate-fadeIn">
+                    {foods.map((food, idx) => (
+                      <div key={food._id || idx} className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-bold text-slate-900">{food.name || food.englishName}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">₹{food.price || food.basePrice}</p>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            // Optional: Add to cart logic directly from hotel view
+                            alert(`Added ${food.name || food.englishName} to cart!`);
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black px-3 py-1.5 rounded-xl shadow transition cursor-pointer active:scale-95"
+                        >
+                          + Add
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+              </div>
+            );
+          })}
         </div>
       )}
 

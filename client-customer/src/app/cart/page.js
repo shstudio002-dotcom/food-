@@ -17,7 +17,42 @@ export default function CartPage() {
   const [customerName, setCustomerName] = useState('Valued Customer');
   const [customerPhone, setCustomerPhone] = useState('9108626303');
 
+  // Automatic GPS Detection on page load
+  const handleAutoDetectGPS = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsDetectingGPS(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          if (data && data.display_name) {
+            setAddress(data.display_name);
+          } else {
+            setAddress(`[GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}] Shivamogga`);
+          }
+        } catch (err) {
+          setAddress(`[GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}] Shivamogga`);
+        } finally {
+          setIsDetectingGPS(false);
+        }
+      },
+      () => {
+        setIsDetectingGPS(false);
+        alert('⚠️ GPS location is turned off or blocked. Please enable location permissions in your browser settings or type your address manually.');
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
   useEffect(() => {
+    // Automatically trigger GPS location detection upon entering the cart
+    handleAutoDetectGPS();
+
     // Load logged-in user name and phone from localStorage
     const savedName = localStorage.getItem('shopmatries_username');
     const savedPhone = localStorage.getItem('shopmatries_phone');
@@ -102,34 +137,7 @@ export default function CartPage() {
   };
 
   const handleDetectGPS = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
-      return;
-    }
-    setIsDetectingGPS(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          const data = await res.json();
-          if (data && data.display_name) {
-            setAddress(data.display_name);
-          } else {
-            setAddress(`[GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}] Shivamogga`);
-          }
-        } catch (err) {
-          setAddress(`[GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}] Shivamogga`);
-        } finally {
-          setIsDetectingGPS(false);
-        }
-      },
-      () => {
-        setIsDetectingGPS(false);
-        alert('Unable to retrieve your location. Please type address manually.');
-      },
-      { timeout: 10000 }
-    );
+    handleAutoDetectGPS();
   };
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -154,7 +162,7 @@ export default function CartPage() {
           items: cartItems.map(i => ({ foodItem: i.id, name: i.name, quantity: i.quantity, price: i.price })),
           totalPrice: total,
           deliveryFee: deliveryFee,
-          address: deliveryType === 'delivery' ? `[GPS: 13.9466, 75.5428] ${address}` : 'Store Pickup',
+          address: deliveryType === 'delivery' ? `[GPS Auto-Detected] ${address}` : 'Store Pickup',
           fulfillmentType: deliveryType,
           paymentMode: paymentMethod === 'razorpay' ? 'Online (Razorpay Verified)' : 'Cash on Delivery',
           paymentStatus: paymentMethod === 'razorpay' ? 'Paid (Verified)' : 'Pending (COD)',
@@ -288,7 +296,6 @@ export default function CartPage() {
             <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">📦 Fulfillment Option</label>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setDeliveryType('delivery')} className={`py-2 px-3 rounded-xl text-xs font-bold transition border cursor-pointer ${deliveryType === 'delivery' ? 'bg-emerald-600 text-white border-emerald-600 shadow' : 'bg-white text-slate-700 border-slate-200'}`}>🏠 Home Delivery</button>
-              <button onClick={() => setDeliveryType('pickup')} className={`py-2 px-3 rounded-xl text-xs font-bold transition border cursor-pointer ${deliveryType === 'pickup' ? 'bg-emerald-600 text-white border-emerald-600 shadow' : 'bg-white text-slate-700 border-slate-200'}`}>🏬 Store Pickup</button>
             </div>
           </div>
 
@@ -297,10 +304,10 @@ export default function CartPage() {
               <div className="flex justify-between items-center">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">📍 Delivery Address</label>
                 <button onClick={handleDetectGPS} disabled={isDetectingGPS} className="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
-                  <span>{isDetectingGPS ? '🛰️ Detecting...' : '📡 Use GPS Location'}</span>
+                  <span>{isDetectingGPS ? '🛰️ Detecting...' : '📡 Re-detect GPS Location'}</span>
                 </button>
               </div>
-              <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Type address..." className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none" rows="2" />
+              <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Type address or allow GPS..." className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none" rows="2" />
             </div>
           )}
 
@@ -310,7 +317,7 @@ export default function CartPage() {
               <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${paymentMethod === 'razorpay' ? 'border-emerald-600 bg-emerald-50/50 shadow-sm' : 'border-slate-200 bg-white'}`}>
                 <div className="flex items-center space-x-2">
                   <input type="radio" name="payment" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} className="accent-emerald-600" />
-                  <span className="font-bold text-xs text-slate-900">🔒 Razorpay Secure Gateway</span>
+                  <span className="font-bold text-xs text-slate-900">💳 Online Payment (Razorpay)</span>
                 </div>
               </label>
               <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${paymentMethod === 'cod' ? 'border-emerald-600 bg-emerald-50/50 shadow-sm' : 'border-slate-200 bg-white'}`}>

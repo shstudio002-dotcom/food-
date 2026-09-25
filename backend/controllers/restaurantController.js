@@ -13,7 +13,7 @@ exports.getFoods = async (req, res) => {
 // Add new food dish
 exports.addFood = async (req, res) => {
   try {
-    const { kannadaName, englishName, name, category, hotelImage, price, image, } = req.body;
+    const { kannadaName, englishName, name, category, hotelImage, price, image, hotelName, restaurant, hotelId } = req.body;
     const dishName = englishName || name;
 
     const newFood = new FoodItem({
@@ -22,6 +22,9 @@ exports.addFood = async (req, res) => {
       category: category || 'Hotels',
       price: Number(price),
       image: image || '',
+      hotelName: hotelName || restaurant || '',
+      hotelId: hotelId || '',
+      hotelImage: hotelImage || '',
       inStock: true
     });
 
@@ -35,14 +38,17 @@ exports.addFood = async (req, res) => {
 // Update food price or details
 exports.updateFood = async (req, res) => {
   try {
-    const { price, name, kannadaName, category } = req.body;
+    const { price, name, kannadaName, category, image, hotelName, hotelImage } = req.body;
     const updated = await FoodItem.findByIdAndUpdate(
       req.params.id,
       { 
         ...(price !== undefined && { price: Number(price) }), 
         ...(name && { name }), 
         ...(kannadaName && { kannadaName }), 
-        ...(category && { category }) 
+        ...(category && { category }),
+        ...(image && { image }),
+        ...(hotelName && { hotelName }),
+        ...(hotelImage && { hotelImage })
       },
       { new: true }
     );

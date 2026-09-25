@@ -1,5 +1,5 @@
 {
   "appId": "com.shstudio.foodmatries",
-  "appName": "Food Matries ",
-  "webDir": "public"
+  "appName": "Food Matries",
+  "webDir": "out"
 }

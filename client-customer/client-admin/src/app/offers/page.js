@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 
 export default function AdminOffersPage() {
   const [offer, setOffer] = useState({
-    tag: 'FLAT 50% OFF',
-    title: 'FLAT 50% OFF',
-    subtitle: 'On your first 3 food orders!',
+    tag: '',
+    title: '',
+    subtitle: '',
     Delivery: 'Free',
     bgMedia: '',
     mediaType: '' // 'image' or 'video'

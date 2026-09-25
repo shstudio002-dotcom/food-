@@ -184,15 +184,24 @@ export default function Home() {
     return sum + (item ? item.price * qty : 0);
   }, 0);
 
-  // Safe Filter Logic mapping restaurant names and food fields
+  // 🔍 Advanced Multi-Term Search & Filter Logic: Matches multiple search terms across food names, Kannada names, hotels, and categories
   const filteredItems = foodItemsList.filter(item => {
     const hotelRefId = item.hotelId;
     const hotelNameField = item.hotelName || item.restaurant || item.restaurantName || '';
     const itemName = item.englishName || item.name || item.dishName || '';
     const kannadaName = item.kannadaName || '';
-    const query = searchQuery ? searchQuery.toLowerCase() : '';
-
-    const matchesSearch = itemName.toLowerCase().includes(query) || kannadaName.toLowerCase().includes(query);
+    const itemCategory = item.category || '';
+    
+    const query = searchQuery ? searchQuery.toLowerCase().trim() : '';
+    const searchTerms = query.split(/\s+/);
+    
+    // Ensure every typed term matches at least one descriptor field
+    const matchesSearch = query === '' || searchTerms.every(term => 
+      itemName.toLowerCase().includes(term) || 
+      kannadaName.toLowerCase().includes(term) || 
+      hotelNameField.toLowerCase().includes(term) ||
+      itemCategory.toLowerCase().includes(term)
+    );
     
     if (selectedHotel) {
       const hotelDisplayName = selectedHotel.name || selectedHotel.hotelName || selectedHotel.restaurantName || '';
@@ -205,14 +214,14 @@ export default function Home() {
       return matchesSearch;
     }
 
-    const matchesCategory = selectedCategory === 'all' || item.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesCategory = selectedCategory === 'all' || itemCategory.toLowerCase() === selectedCategory.toLowerCase();
     return matchesCategory && matchesSearch;
   });
 
   return (
     <div className="relative pb-36 bg-white min-h-screen">
       
-      {/* 🔒 STATIONARY STICKY TOP CONTAINER (Pins both the Green Bar and Header to the top on scroll) */}
+      {/* 🔒 STATIONARY STICKY TOP CONTAINER */}
       <div className="sticky top-0 bg-white z-40 shadow-sm">
         
         {/* 1. TOP GREEN NOTIFICATION BAR */}
@@ -251,7 +260,6 @@ export default function Home() {
           {/* Dynamic Backend Offers & Media Banner */}
           <div className="relative rounded-2xl p-3 text-white shadow-md overflow-hidden bg-slate-900 min-h-[90px] flex justify-between items-center">
             
-            {/* Dynamic Background Media Layer */}
             {bannerData.bgMedia ? (
               bannerData.mediaType === 'video' ? (
                 <video 
@@ -273,13 +281,12 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 z-0"></div>
             )}
 
-            {/* Dark Overlay for text contrast */}
             <div className="absolute inset-0 bg-slate-950/40 z-0"></div>
 
             <div className="z-10 space-y-0.5">
-              <span className="bg-amber-400 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded uppercase font-mono">Offer</span>
-              <h2 className="text-xs font-black tracking-tight">{bannerData.title || 'FLAT 50% OFF'}</h2>
-              <p className="text-[10px] text-slate-200">{bannerData.subtitle || 'On your first 3 food orders!'}</p>
+              <span className="bg-amber-400 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded uppercase font-mono">{bannerData.tag }</span>
+              <h2 className="text-xs font-black tracking-tight">{bannerData.title }</h2>
+              <p className="text-[10px] text-slate-200">{bannerData.subtitle}</p>
             </div>
 
             <div className="z-10 text-right bg-black/40 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-white/10">
@@ -315,19 +322,19 @@ export default function Home() {
       {/* 3. SCROLLABLE CONTENT AREA */}
       <div className="p-4 space-y-4">
         
-        {/* Search Bar */}
+        {/* Universal Search Bar */}
         <div className="relative">
           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">🔍</span>
           <input
             type="text"
-            placeholder={selectedHotel ? `Search in ${selectedHotel.name || selectedHotel.hotelName || 'Midari hotel'}...` : "Search for biryani, dosa, meals..."}
+            placeholder={selectedHotel ? `Search dishes or hotel in ${selectedHotel.name || selectedHotel.hotelName || 'Midari hotel'}...` : "Search food, dish name, or hotel..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
           />
         </div>
 
-        {/* RESTAURANTS VIEW (When 'Hotels' category is chosen and no specific hotel is opened) */}
+        {/* RESTAURANTS VIEW */}
         {selectedCategory === 'Hotels' && !selectedHotel ? (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -407,7 +414,7 @@ export default function Home() {
             <div className="grid grid-cols-2 gap-2.5">
               {filteredItems.length === 0 ? (
                 <div className="col-span-2 text-center py-12 text-slate-400 text-xs font-bold bg-slate-50 border border-slate-100 rounded-2xl">
-                  {selectedHotel ? `No dishes found for this restaurant.` : 'No food dishes found in this category.'}
+                  {selectedHotel ? `No dishes found matching your search.` : 'No food dishes found matching your search.'}
                 </div>
               ) : (
                 filteredItems.map((item) => {

@@ -7,9 +7,9 @@ export default function CartPage() {
   
   const [cartItems, setCartItems] = useState([]);
   const [address, setAddress] = useState('123, Main Street, Near Tech Park, City');
+  const [gpsCoordinates, setGpsCoordinates] = useState({ lat: null, lng: null });
   const [isDetectingGPS, setIsDetectingGPS] = useState(false);
   const [deliveryType, setDeliveryType] = useState('delivery'); // 'delivery' or 'pickup'
-  const [paymentMethod, setPaymentMethod] = useState('razorpay'); // 'razorpay' or 'cod'
   const [loading, setLoading] = useState(false);
   const [backendDeliveryFee, setBackendDeliveryFee] = useState(30);
   
@@ -27,23 +27,24 @@ export default function CartPage() {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
+        setGpsCoordinates({ lat: latitude, lng: longitude });
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
           const data = await res.json();
           if (data && data.display_name) {
             setAddress(data.display_name);
           } else {
-            setAddress(`[GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}] Shivamogga`);
+            setAddress(`[GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}]`);
           }
         } catch (err) {
-          setAddress(`[GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}] Shivamogga`);
+          setAddress(`[GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}]`);
         } finally {
           setIsDetectingGPS(false);
         }
       },
       () => {
         setIsDetectingGPS(false);
-        alert('⚠️ GPS location is turned off or blocked. Please enable location permissions in your browser settings or type your address manually.');
+        alert('⚠️ GPS location is turned off or blocked. Please enable location permissions in your browser settings.');
       },
       { timeout: 10000, enableHighAccuracy: true }
     );
@@ -58,11 +59,6 @@ export default function CartPage() {
     const savedPhone = localStorage.getItem('shopmatries_phone');
     if (savedName) setCustomerName(savedName);
     if (savedPhone) setCustomerPhone(savedPhone);
-
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
 
@@ -144,13 +140,19 @@ export default function CartPage() {
   const deliveryFee = deliveryType === 'delivery' && subtotal > 0 ? backendDeliveryFee : 0;
   const total = subtotal + deliveryFee;
 
-  // Final step: Save order to backend including customer Name and Phone
-  const verifyAndSaveOrder = async (paymentDetails = null) => {
+  // Final step: Save order to backend including exact GPS link for the admin
+  const verifyAndSaveOrder = async () => {
     try {
       const activeName = localStorage.getItem('shopmatries_username') || customerName;
       const activePhone = localStorage.getItem('shopmatries_phone') || customerPhone;
       const primaryRestaurantId = cartItems.length > 0 && cartItems[0].hotelId ? cartItems[0].hotelId : '60c72b2f9b1d8b2f98e01234';
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+
+      // Format precise location string with Google Maps link capability for the admin dashboard
+      const mapsGeoLink = gpsCoordinates.lat && gpsCoordinates.lng 
+        ? `[Maps: https://www.google.com/maps?q=${gpsCoordinates.lat},${gpsCoordinates.lng}] ` 
+        : '';
+      const finalRecordedAddress = deliveryType === 'delivery' ? `${mapsGeoLink}${address}` : 'Store Pickup';
 
       const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
@@ -162,11 +164,10 @@ export default function CartPage() {
           items: cartItems.map(i => ({ foodItem: i.id, name: i.name, quantity: i.quantity, price: i.price })),
           totalPrice: total,
           deliveryFee: deliveryFee,
-          address: deliveryType === 'delivery' ? `[GPS Auto-Detected] ${address}` : 'Store Pickup',
+          address: finalRecordedAddress,
           fulfillmentType: deliveryType,
-          paymentMode: paymentMethod === 'razorpay' ? 'Online (Razorpay Verified)' : 'Cash on Delivery',
-          paymentStatus: paymentMethod === 'razorpay' ? 'Paid (Verified)' : 'Pending (COD)',
-          paymentDetails
+          paymentMode: 'Cash on Delivery',
+          paymentStatus: 'Pending (COD)'
         })
       });
 
@@ -196,42 +197,7 @@ export default function CartPage() {
     if (deliveryType === 'delivery' && !address.trim()) return alert('Please provide a delivery address!');
 
     setLoading(true);
-
-    if (paymentMethod === 'cod') {
-      await verifyAndSaveOrder();
-    } else {
-      try {
-        const simulatedOptions = {
-          key: 'rzp_test_simulatedkey',
-          amount: total * 100,
-          currency: 'INR',
-          name: 'Shopmatries Food Delivery',
-          description: 'Food Order Payment',
-          handler: function (response) {
-            verifyAndSaveOrder({
-              razorpayPaymentId: response.razorpay_payment_id || 'pay_simulated_' + Date.now(),
-              razorpayOrderId: 'order_simulated',
-              razorpaySignature: 'sig_verified'
-            });
-          },
-          prefill: { 
-            name: customerName, 
-            contact: customerPhone 
-          },
-          theme: { color: '#059669' }
-        };
-
-        if (window.Razorpay) {
-          const rzp = new window.Razorpay(simulatedOptions);
-          rzp.open();
-          setLoading(false);
-        } else {
-          await verifyAndSaveOrder({ paymentMode: 'Razorpay Direct Verified' });
-        }
-      } catch (err) {
-        await verifyAndSaveOrder({ paymentMode: 'Razorpay Fallback Verified' });
-      }
-    }
+    await verifyAndSaveOrder();
   };
 
   return (
@@ -304,30 +270,12 @@ export default function CartPage() {
               <div className="flex justify-between items-center">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">📍 Delivery Address</label>
                 <button onClick={handleDetectGPS} disabled={isDetectingGPS} className="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
-                  <span>{isDetectingGPS ? '🛰️ Detecting...' : '📡 Re-detect GPS Location'}</span>
+                  <span>{isDetectingGPS ? '🛰️ Detecting...' : '📡 Use GPS Location'}</span>
                 </button>
               </div>
-              <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Type address or allow GPS..." className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none" rows="2" />
+              <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Type address..." className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none" rows="2" />
             </div>
           )}
-
-          <div className="bg-white border border-slate-200 p-4 rounded-2xl space-y-3 shadow-sm">
-            <label className="text-xs font-bold text-slate-900 uppercase tracking-wide block border-b pb-2">💳 Payment Mode</label>
-            <div className="space-y-2">
-              <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${paymentMethod === 'razorpay' ? 'border-emerald-600 bg-emerald-50/50 shadow-sm' : 'border-slate-200 bg-white'}`}>
-                <div className="flex items-center space-x-2">
-                  <input type="radio" name="payment" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} className="accent-emerald-600" />
-                  <span className="font-bold text-xs text-slate-900">💳 Online Payment (Razorpay)</span>
-                </div>
-              </label>
-              <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${paymentMethod === 'cod' ? 'border-emerald-600 bg-emerald-50/50 shadow-sm' : 'border-slate-200 bg-white'}`}>
-                <div className="flex items-center space-x-2">
-                  <input type="radio" name="payment" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="accent-emerald-600" />
-                  <span className="font-bold text-xs text-slate-900">💵 Pay on Delivery</span>
-                </div>
-              </label>
-            </div>
-          </div>
 
           <div className="bg-white border border-slate-100 p-4 rounded-2xl space-y-3 shadow-sm">
             <h4 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-2">Bill Details</h4>
@@ -337,7 +285,7 @@ export default function CartPage() {
           </div>
 
           <button onClick={handleCheckout} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm py-4 rounded-2xl shadow-xl transition cursor-pointer">
-            <span>{loading ? 'Processing...' : `Pay ₹{total} Securely 🔒`}</span>
+            <span>{loading ? 'Processing...' : `Place Order (Pay ₹{total}) 💵`}</span>
           </button>
         </>
       )}

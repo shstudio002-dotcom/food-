@@ -42,6 +42,7 @@ export default function Home() {
       .then(data => {
         if (data) {
           setBannerData({
+            tag: data.tag || '',
             title: data.title || '',
             subtitle: data.subtitle || '',
             Delivery: data.Delivery || '',

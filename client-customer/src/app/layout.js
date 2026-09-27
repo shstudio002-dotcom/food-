@@ -70,7 +70,7 @@ export default function RootLayout({ children }) {
                   href="/" 
                   className={`flex flex-col items-center py-1 px-4 rounded-xl transition ${pathname === '/' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
                 >
-                  <span className="text-base">🏠</span>
+                  <span className="text-base">🍽️</span>
                   <span className="text-[10px]">Home</span>
                 </Link>
 
@@ -78,7 +78,7 @@ export default function RootLayout({ children }) {
                   href="/cart" 
                   className={`flex flex-col items-center py-1 px-4 rounded-xl transition ${pathname === '/cart' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
                 >
-                  <span className="text-base">🛒</span>
+                  <span className="text-base">🛍️</span>
                   <span className="text-[10px]">Cart</span>
                 </Link>
 
@@ -86,7 +86,7 @@ export default function RootLayout({ children }) {
                   href="/orders" 
                   className={`flex flex-col items-center py-1 px-4 rounded-xl transition ${pathname === '/orders' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
                 >
-                  <span className="text-base">📦</span>
+                  <span className="text-base">🥢</span>
                   <span className="text-[10px]">Orders</span>
                 </Link>
 
@@ -94,7 +94,7 @@ export default function RootLayout({ children }) {
                   href="/profile" 
                   className={`flex flex-col items-center py-1 px-4 rounded-xl transition ${pathname === '/profile' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
                 >
-                  <span className="text-base">👤</span>
+                  <span className="text-base">🍷</span>
                   <span className="text-[10px]">Profile</span>
                 </Link>
               </nav>

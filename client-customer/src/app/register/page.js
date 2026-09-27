@@ -1,7 +1,11 @@
 'use client';
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import foodexpressLogo from './images/foodexpress-logo.jpeg';
+import foodexpressBottom from './images/foodexpress-bottom.jpeg';
 
 export default function AdminRegisterPage() {
   const [name, setName] = useState('');
@@ -10,10 +14,12 @@ export default function AdminRegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
   const router = useRouter();
 
   const handleRegister = (e) => {
     e.preventDefault();
+
     setError('');
     setMessage('');
 
@@ -27,126 +33,295 @@ export default function AdminRegisterPage() {
       return;
     }
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL =
+      process.env.NEXT_PUBLIC_API_URL ||
+      'https://food-ohea.onrender.com';
 
     fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, password })
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        phone,
+        password,
+      }),
     })
-      .then(res => res.json())
-      .then(data => {
-        // Save user details locally for instant profile & order syncing
+      .then((res) => res.json())
+      .then((data) => {
+        // Keep existing local storage keys
+        // so the rest of the application continues working.
         localStorage.setItem('shopmatries_username', name);
         localStorage.setItem('shopmatries_phone', phone);
-        localStorage.setItem('shopmatries_token', data.token || 'token-' + Date.now());
+        localStorage.setItem(
+          'shopmatries_token',
+          data.token || 'token-' + Date.now()
+        );
 
-        setMessage('✅ Account created successfully! Redirecting...');
-        setTimeout(() => router.push('/login'), 2000);
+        setMessage('Account created successfully! Redirecting...');
+
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
       })
       .catch((err) => {
         console.error('Registration connection error:', err);
-        // Fallback local storage saving
+
+        // Existing fallback behavior
         localStorage.setItem('shopmatries_username', name);
         localStorage.setItem('shopmatries_phone', phone);
-        localStorage.setItem('shopmatries_token', 'local-token-' + Date.now());
+        localStorage.setItem(
+          'shopmatries_token',
+          'local-token-' + Date.now()
+        );
 
-        setMessage('✅ Account created locally! Redirecting...');
-        setTimeout(() => router.push('/login'), 2000);
+        setMessage('Account created locally! Redirecting...');
+
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
       });
   };
 
   return (
-    <div className="space-y-6 py-8 px-4">
-      
-      {/* Header */}
-      <div className="text-center space-y-1.5">
-        <span className="w-12 h-12 bg-emerald-600 rounded-2xl inline-flex items-center justify-center text-white text-xl font-black shadow-lg shadow-emerald-600/30">⚡</span>
-        <h1 className="text-lg font-black text-slate-950 tracking-tight">Create Customer Account</h1>
-        <p className="text-xs text-slate-500">Register with your mobile number to order food instantly.</p>
+    <main className="min-h-screen bg-white relative overflow-hidden">
+
+      {/* =====================================================
+          DECORATIVE TOP CORNER
+      ====================================================== */}
+      <div className="absolute top-0 right-0 w-28 h-28 bg-orange-50 rounded-bl-[70px] pointer-events-none" />
+
+      <div className="absolute top-24 left-0 w-16 h-16 bg-orange-50 rounded-r-full pointer-events-none" />
+
+      {/* =====================================================
+          MAIN CONTENT
+      ====================================================== */}
+      <div className="relative z-10 max-w-md mx-auto min-h-screen flex flex-col px-5 pt-7">
+
+        {/* ===================================================
+            FOOD EXPRESS LOGO
+        ==================================================== */}
+        <div className="flex justify-center mb-3">
+
+          <img
+            src={foodexpressLogo.src}
+            alt="FoodExpress"
+            className="w-[210px] h-auto object-contain"
+          />
+
+        </div>
+
+        {/* ===================================================
+            BRAND TAGLINE
+        ==================================================== */}
+        <div className="text-center mb-5">
+
+          <p className="text-[11px] text-slate-500 font-medium tracking-wide">
+            Good Food
+            <span className="text-orange-500 mx-2">•</span>
+            Fast Delivery
+            <span className="text-orange-500 mx-2">•</span>
+            Happy You
+          </p>
+
+        </div>
+
+        {/* ===================================================
+            PAGE TITLE
+        ==================================================== */}
+        <div className="text-center mb-5">
+
+          <h1 className="text-[25px] leading-tight font-black text-slate-950 tracking-tight">
+            Create Account
+          </h1>
+
+          <p className="text-xs text-slate-500 mt-2">
+            Create your account and start ordering delicious food.
+          </p>
+
+        </div>
+
+        {/* ===================================================
+            ERROR MESSAGE
+        ==================================================== */}
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-600 text-xs font-bold px-4 py-3 rounded-2xl text-center shadow-sm">
+            {error}
+          </div>
+        )}
+
+        {/* ===================================================
+            SUCCESS MESSAGE
+        ==================================================== */}
+        {message && (
+          <div className="mb-4 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold px-4 py-3 rounded-2xl text-center shadow-sm">
+            {message}
+          </div>
+        )}
+
+        {/* ===================================================
+            REGISTER FORM
+        ==================================================== */}
+        <form
+          onSubmit={handleRegister}
+          className="bg-white border border-slate-200 rounded-[26px] p-5 shadow-[0_8px_30px_rgba(15,23,42,0.08)] space-y-4"
+        >
+
+          {/* FULL NAME */}
+          <div className="space-y-1.5">
+
+            <label className="text-[10px] font-black text-slate-600 uppercase tracking-wide">
+              Full Name
+            </label>
+
+            <div className="relative">
+
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500 text-sm">
+                👤
+              </span>
+
+              <input
+                type="text"
+                placeholder="Enter your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
+                required
+              />
+
+            </div>
+
+          </div>
+
+          {/* MOBILE NUMBER */}
+          <div className="space-y-1.5">
+
+            <label className="text-[10px] font-black text-slate-600 uppercase tracking-wide">
+              10-Digit Mobile Number
+            </label>
+
+            <div className="relative">
+
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500 text-sm">
+                📞
+              </span>
+
+              <input
+                type="tel"
+                maxLength={10}
+                inputMode="numeric"
+                placeholder="Enter mobile number"
+                value={phone}
+                onChange={(e) =>
+                  setPhone(e.target.value.replace(/\D/g, ''))
+                }
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-mono font-bold tracking-wide transition"
+                required
+              />
+
+            </div>
+
+          </div>
+
+          {/* PASSWORD */}
+          <div className="space-y-1.5">
+
+            <label className="text-[10px] font-black text-slate-600 uppercase tracking-wide">
+              Password
+            </label>
+
+            <div className="relative">
+
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500 text-sm">
+                🔒
+              </span>
+
+              <input
+                type="password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
+                required
+              />
+
+            </div>
+
+          </div>
+
+          {/* CONFIRM PASSWORD */}
+          <div className="space-y-1.5">
+
+            <label className="text-[10px] font-black text-slate-600 uppercase tracking-wide">
+              Confirm Password
+            </label>
+
+            <div className="relative">
+
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500 text-sm">
+                🔐
+              </span>
+
+              <input
+                type="password"
+                placeholder="Re-enter password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
+                required
+              />
+
+            </div>
+
+          </div>
+
+          {/* REGISTER BUTTON */}
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white text-sm font-black py-3.5 rounded-xl shadow-lg shadow-orange-500/25 transition-all duration-200 active:scale-[0.98] mt-2"
+          >
+            Create Account
+            <span className="ml-2">→</span>
+          </button>
+
+        </form>
+
+        {/* ===================================================
+            LOGIN LINK
+        ==================================================== */}
+        <div className="text-center mt-5">
+
+          <p className="text-xs text-slate-500">
+
+            Already have an account?
+
+            <Link
+              href="/login"
+              className="text-red-500 font-black ml-1 hover:text-orange-500 hover:underline transition"
+            >
+              Sign In
+            </Link>
+
+          </p>
+
+        </div>
+
+        {/* ===================================================
+            BOTTOM FOOD ILLUSTRATION
+        ==================================================== */}
+        <div className="relative mt-auto -mx-5 pt-4">
+
+          <img
+            src={foodexpressBottom.src}
+            alt="FoodExpress food"
+            className="w-full h-auto object-cover object-bottom"
+          />
+
+        </div>
+
       </div>
 
-      {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold p-3 rounded-2xl text-center shadow-sm">
-          {error}
-        </div>
-      )}
-
-      {message && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold p-3 rounded-2xl text-center shadow-sm">
-          {message}
-        </div>
-      )}
-
-      {/* Register Form */}
-      <form onSubmit={handleRegister} className="bg-white border border-slate-200 p-5 rounded-3xl shadow-sm space-y-3.5">
-        
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-600 uppercase">Full Name</label>
-          <input 
-            type="text" 
-            placeholder="Mahendar Midari"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500 font-bold"
-            required
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-600 uppercase">10-Digit Mobile Number</label>
-          <input 
-            type="tel" 
-            maxLength={10}
-            placeholder="9108626303"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500 font-mono font-bold"
-            required
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-600 uppercase">Password</label>
-          <input 
-            type="password" 
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500"
-            required
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-600 uppercase">Confirm Password</label>
-          <input 
-            type="password" 
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-emerald-500"
-            required
-          />
-        </div>
-
-        <button 
-          type="submit"
-          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition active:scale-95 mt-2"
-        >
-          Create Account ⚡
-        </button>
-
-      </form>
-
-      {/* Footer Link */}
-      <p className="text-center text-xs text-slate-500">
-        Already have an account?{' '}
-        <Link href="/login" className="text-emerald-600 font-bold hover:underline">
-          Sign In
-        </Link>
-      </p>
-
-    </div>
+    </main>
   );
 }

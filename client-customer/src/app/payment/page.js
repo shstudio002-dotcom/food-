@@ -7,6 +7,10 @@ export default function PaymentGatewayPage() {
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Admin / Merchant Payment Details
+  const MERCHANT_UPI_ID = '9113615967@upi';
+  const MERCHANT_PHONE = '9113615967';
+
   useEffect(() => {
     const pending = localStorage.getItem('shopmatries_pending_order');
     if (pending) {
@@ -26,16 +30,13 @@ export default function PaymentGatewayPage() {
 
     const method = orderData.paymentMethodChoice || 'UPI';
 
-    // Handle Deep Linking / App Redirection for UPI apps (PhonePe, GPay, Paytm)
+    // Handle Deep Linking / App Redirection for UPI apps using the merchant number/UPI ID
     if (method.includes('PhonePe')) {
-      // Intent scheme for PhonePe
-      window.location.href = `phonepe://pay?pa=shopmatries@upi&pn=ShopmatriesFood&am=${orderData.totalPrice}&cu=INR`;
+      window.location.href = `phonepe://pay?pa=${MERCHANT_UPI_ID}&pn=ShopmatriesFood&am=${orderData.totalPrice}&cu=INR`;
     } else if (method.includes('Google Pay')) {
-      // Intent scheme for Google Pay
-      window.location.href = `tez://upi/pay?pa=shopmatries@upi&pn=ShopmatriesFood&am=${orderData.totalPrice}&cu=INR`;
+      window.location.href = `tez://upi/pay?pa=${MERCHANT_UPI_ID}&pn=ShopmatriesFood&am=${orderData.totalPrice}&cu=INR`;
     } else if (method.includes('UPI')) {
-      // Generic UPI Intent
-      window.location.href = `upi://pay?pa=shopmatries@upi&pn=ShopmatriesFood&am=${orderData.totalPrice}&cu=INR`;
+      window.location.href = `upi://pay?pa=${MERCHANT_UPI_ID}&pn=ShopmatriesFood&am=${orderData.totalPrice}&cu=INR`;
     }
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
@@ -48,7 +49,7 @@ export default function PaymentGatewayPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...orderData,
-            paymentStatus: method === 'Cash on Delivery' ? 'Pending (COD)' : 'Paid & Confirmed (Online)'
+            paymentStatus: method.includes('Cash on Delivery') ? 'Pending (COD)' : `Paid to ${MERCHANT_PHONE} & Confirmed`
           })
         });
 
@@ -97,6 +98,13 @@ export default function PaymentGatewayPage() {
         </div>
       </div>
 
+      {/* Admin Payment Number Notice */}
+      <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl space-y-1.5 shadow-sm text-center">
+        <p className="text-xs font-black text-amber-900">📲 Merchant Payment Number</p>
+        <p className="text-sm font-black font-mono text-amber-800">{MERCHANT_PHONE}</p>
+        <p className="text-[11px] text-amber-700">Please make your payment directly to the merchant number above via UPI, GPay, or PhonePe.</p>
+      </div>
+
       <div className="bg-white border border-orange-100 p-4 rounded-2xl space-y-2 shadow-sm">
         <h3 className="text-xs font-black text-slate-900 uppercase">Delivery & Contact</h3>
         <p className="text-xs text-slate-700"><strong>Name:</strong> {orderData.customerName}</p>
@@ -116,7 +124,7 @@ export default function PaymentGatewayPage() {
         disabled={loading} 
         className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-extrabold text-sm py-4 rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98]"
       >
-        <span>{loading ? 'Processing & Redirecting...' : `Pay ₹{orderData.totalPrice} & Confirm Order ⚡`}</span>
+        <span>{loading ? 'Processing & Redirecting...' : `Pay ₹{orderData.totalPrice} to ${MERCHANT_PHONE} & Confirm Order ⚡`}</span>
       </button>
 
       <button 

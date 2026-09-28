@@ -41,6 +41,8 @@ export default function CartPage() {
       (position) => {
         const { latitude, longitude } = position.coords;
         setGpsCoordinates({ lat: latitude, lng: longitude });
+        localStorage.setItem('shopmatries_lat', latitude);
+        localStorage.setItem('shopmatries_lng', longitude);
         const dist = calculateDistance(13.9299, 75.5681, latitude, longitude);
         const roundedDist = Math.max(1, parseFloat(dist.toFixed(1)));
         const calculatedFee = Math.round(roundedDist * 5); // 1km = ₹5 rule
@@ -49,9 +51,9 @@ export default function CartPage() {
       },
       () => {
         setIsDetectingGPS(false);
-        alert('⚠️ Please enable GPS location permissions in your browser settings.');
+        alert('⚠️ Please enable exact GPS location permissions in your browser settings.');
       },
-      { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
+      { timeout: 20000, enableHighAccuracy: true, maximumAge: 0 }
     );
   };
 
@@ -141,7 +143,6 @@ export default function CartPage() {
   const deliveryFee = subtotal > 0 ? backendDeliveryFee : 0;
   const total = subtotal + deliveryFee;
 
-  // Connects cart details to the payment gateway page route
   const handleProceedToPayment = () => {
     if (cartItems.length === 0) return alert('Your cart is empty!');
     if (!fullName.trim() || !phone.trim() || !city.trim() || !area.trim() || !street.trim()) {
@@ -149,7 +150,7 @@ export default function CartPage() {
     }
 
     const mapsGeoLink = gpsCoordinates.lat && gpsCoordinates.lng 
-      ? `[GPS: ${gpsCoordinates.lat}, ${gpsCoordinates.lng}] ` 
+      ? `[GPS: ${gpsCoordinates.lat}, ${gpsCoordinates.lng}] `
       : '';
     
     const structuredAddress = `${mapsGeoLink}Street: ${street}, Area: ${area}, City: ${city}`;
@@ -217,12 +218,11 @@ export default function CartPage() {
             ))}
           </div>
 
-          {/* Detailed Address Inputs */}
           <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl space-y-3">
             <div className="flex justify-between items-center">
               <label className="text-xs font-black text-orange-900 uppercase tracking-wide">📍 Delivery Address & Contact</label>
               <button onClick={handleAutoDetectGPS} disabled={isDetectingGPS} className="bg-white text-orange-700 border border-orange-200 hover:bg-orange-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
-                <span>{isDetectingGPS ? '🛰️ Capturing Pin...' : '📡 Refresh GPS Pin'}</span>
+                <span>{isDetectingGPS ? '🛰️ Capturing Exact Pin...' : '📡 Refresh Exact GPS'}</span>
               </button>
             </div>
 
@@ -248,7 +248,7 @@ export default function CartPage() {
             <div className="grid grid-cols-2 gap-2">
               <input 
                 type="text" 
-                placeholder="City (e.g. Shivamogga)" 
+                placeholder="City (e.g. Shivamogga)"
                 value={city} 
                 onChange={(e) => setCity(e.target.value)} 
                 className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-medium focus:outline-none"
@@ -275,12 +275,11 @@ export default function CartPage() {
 
             {gpsCoordinates.lat && (
               <p className="text-[10px] text-emerald-700 font-mono font-bold">
-                ✓ GPS Pin Captured: {gpsCoordinates.lat.toFixed(4)}, {gpsCoordinates.lng.toFixed(4)}
+                ✓ Exact GPS Pin Secured: {gpsCoordinates.lat.toFixed(6)}, {gpsCoordinates.lng.toFixed(6)}
               </p>
             )}
           </div>
 
-          {/* Payment Method Selector */}
           <div className="bg-white border border-orange-100 p-4 rounded-2xl space-y-3 shadow-sm">
             <h4 className="font-bold text-slate-900 text-sm border-b border-orange-100 pb-2">💳 Payment Method</h4>
             

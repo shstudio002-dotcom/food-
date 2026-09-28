@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import buyBriggLogo from './images/buybrigg-logo.png';
 
 const categories = [
   { id: 'all', name: 'All Items', icon: '🌟' },
@@ -473,23 +474,14 @@ export default function Home() {
 
         <div className="px-4 pt-3 pb-2 space-y-2.5 border-b border-orange-100">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <svg
-                className="w-7 h-7 text-orange-500"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="2" y="6" width="20" height="14" rx="2" />
-                <line x1="10" y1="10" x2="10" y2="20" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-                <path d="M10 6V4a2 2 0 0 1 4 0v2" />
-              </svg>
-              <h1 className="text-lg font-black tracking-tight text-slate-900">
-                Shop<span className="text-orange-500">matries</span>
+            <div className="flex items-center space-x-4">
+              <img
+                src={buyBriggLogo.src}
+                alt="BuyBrigg Logo"
+                className="w-12 h-12 rounded-lg object-cover shadow-sm"
+              />
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                BUY<span className="text-orange-500">BRIGG</span>
               </h1>
             </div>
 

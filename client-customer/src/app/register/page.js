@@ -50,8 +50,6 @@ export default function AdminRegisterPage() {
     })
       .then((res) => res.json())
       .then((data) => {
-        // Keep existing local storage keys
-        // so the rest of the application continues working.
         localStorage.setItem('shopmatries_username', name);
         localStorage.setItem('shopmatries_phone', phone);
         localStorage.setItem(
@@ -68,7 +66,6 @@ export default function AdminRegisterPage() {
       .catch((err) => {
         console.error('Registration connection error:', err);
 
-        // Existing fallback behavior
         localStorage.setItem('shopmatries_username', name);
         localStorage.setItem('shopmatries_phone', phone);
         localStorage.setItem(
@@ -146,7 +143,7 @@ export default function AdminRegisterPage() {
             ERROR MESSAGE
         ==================================================== */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-600 text-xs font-bold px-4 py-3 rounded-2xl text-center shadow-sm">
+          <div className="mb-4 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold px-4 py-3 rounded-2xl text-center shadow-sm">
             {error}
           </div>
         )}
@@ -165,7 +162,7 @@ export default function AdminRegisterPage() {
         ==================================================== */}
         <form
           onSubmit={handleRegister}
-          className="bg-white border border-slate-200 rounded-[26px] p-5 shadow-[0_8px_30px_rgba(15,23,42,0.08)] space-y-4"
+          className="bg-white border border-orange-100 rounded-[26px] p-5 shadow-[0_8px_30px_rgba(234,88,12,0.08)] space-y-4"
         >
 
           {/* FULL NAME */}
@@ -186,7 +183,7 @@ export default function AdminRegisterPage() {
                 placeholder="Enter your full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
+                className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
                 required
               />
 
@@ -216,7 +213,7 @@ export default function AdminRegisterPage() {
                 onChange={(e) =>
                   setPhone(e.target.value.replace(/\D/g, ''))
                 }
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-mono font-bold tracking-wide transition"
+                className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-mono font-bold tracking-wide transition"
                 required
               />
 
@@ -242,7 +239,7 @@ export default function AdminRegisterPage() {
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
+                className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
                 required
               />
 
@@ -268,7 +265,7 @@ export default function AdminRegisterPage() {
                 placeholder="Re-enter password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
+                className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
                 required
               />
 
@@ -279,7 +276,7 @@ export default function AdminRegisterPage() {
           {/* REGISTER BUTTON */}
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white text-sm font-black py-3.5 rounded-xl shadow-lg shadow-orange-500/25 transition-all duration-200 active:scale-[0.98] mt-2"
+            className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white text-sm font-black py-3.5 rounded-xl shadow-lg shadow-orange-500/25 transition-all duration-200 active:scale-[0.98] mt-2 cursor-pointer"
           >
             Create Account
             <span className="ml-2">→</span>
@@ -298,7 +295,7 @@ export default function AdminRegisterPage() {
 
             <Link
               href="/login"
-              className="text-red-500 font-black ml-1 hover:text-orange-500 hover:underline transition"
+              className="text-orange-600 font-black ml-1 hover:text-orange-700 hover:underline transition"
             >
               Sign In
             </Link>

@@ -19,7 +19,7 @@ export default function QuickMenuPage() {
     const API_URL =
       process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
-    // Fetch live food catalog from backend
+    // Fetch live food catalog from backend[cite: 6]
     fetch(`${API_URL}/api/foods`)
       .then(res => res.json())
       .then(data => {
@@ -85,7 +85,7 @@ export default function QuickMenuPage() {
 
         <button
           onClick={() => router.push('/')}
-          className="text-xs bg-orange-50 text-orange-600 border border-orange-200 font-bold px-3 py-1.5 rounded-xl hover:bg-orange-100 transition active:scale-95"
+          className="text-xs bg-orange-50 text-orange-600 border border-orange-200 font-bold px-3 py-1.5 rounded-xl hover:bg-orange-100 transition active:scale-95 cursor-pointer"
         >
           ← Home
         </button>
@@ -97,7 +97,7 @@ export default function QuickMenuPage() {
           <button
             key={cat.id}
             onClick={() => setActiveTab(cat.id)}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 border transition-all ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 border transition-all cursor-pointer ${
               activeTab === cat.id
                 ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-500/25'
                 : 'bg-orange-50 text-slate-700 border-orange-100 hover:bg-orange-100'
@@ -160,7 +160,7 @@ export default function QuickMenuPage() {
                   {qty === 0 ? (
                     <button
                       onClick={() => updateCart(itemId, 1)}
-                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm"
+                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm cursor-pointer"
                     >
                       + Add
                     </button>
@@ -168,7 +168,7 @@ export default function QuickMenuPage() {
                     <div className="flex items-center space-x-1.5 bg-orange-500 text-white rounded-lg px-2 py-1 shadow-sm">
                       <button
                         onClick={() => updateCart(itemId, -1)}
-                        className="font-bold text-xs hover:bg-orange-600 rounded px-1"
+                        className="font-bold text-xs hover:bg-orange-600 rounded px-1 cursor-pointer"
                       >
                         -
                       </button>
@@ -179,7 +179,7 @@ export default function QuickMenuPage() {
 
                       <button
                         onClick={() => updateCart(itemId, 1)}
-                        className="font-bold text-xs hover:bg-orange-600 rounded px-1"
+                        className="font-bold text-xs hover:bg-orange-600 rounded px-1 cursor-pointer"
                       >
                         +
                       </button>
@@ -207,7 +207,7 @@ export default function QuickMenuPage() {
 
           <button
             onClick={() => router.push('/cart')}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md active:scale-95 transition"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md active:scale-95 transition cursor-pointer"
           >
             Checkout ➔
           </button>

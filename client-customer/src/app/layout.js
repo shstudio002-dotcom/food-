@@ -44,7 +44,7 @@ export default function RootLayout({ children }) {
       </head>
       
       {/* Outer theatrical background wrapper */}
-      <body className="bg-slate-950 text-slate-900 h-dvh w-screen m-0 p-0 flex justify-center items-center antialiased overflow-hidden selection:bg-emerald-500 selection:text-white">
+      <body className="bg-slate-950 text-slate-900 h-dvh w-screen m-0 p-0 flex justify-center items-center antialiased overflow-hidden selection:bg-orange-500 selection:text-white">
         
         {isAdminRoute ? (
           /* ⚡ Full Screen Independent Layout for Admin Dashboard */
@@ -64,11 +64,11 @@ export default function RootLayout({ children }) {
             {!hideNavBar && (
               <nav 
                 id="bottom-nav-bar"
-                className="shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-100 flex justify-around items-center py-2 px-2 z-35 shadow-lg transition-all duration-300"
+                className="shrink-0 bg-white/95 backdrop-blur-md border-t border-orange-100 flex justify-around items-center py-2 px-2 z-35 shadow-lg transition-all duration-300"
               >
                 <Link 
                   href="/" 
-                  className={`flex flex-col items-center py-1 px-4 rounded-xl transition ${pathname === '/' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
+                  className={`flex flex-col items-center py-1 px-4 rounded-xl transition cursor-pointer ${pathname === '/' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
                 >
                   <span className="text-base">🍽️</span>
                   <span className="text-[10px]">Home</span>
@@ -76,7 +76,7 @@ export default function RootLayout({ children }) {
 
                 <Link 
                   href="/cart" 
-                  className={`flex flex-col items-center py-1 px-4 rounded-xl transition ${pathname === '/cart' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
+                  className={`flex flex-col items-center py-1 px-4 rounded-xl transition cursor-pointer ${pathname === '/cart' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
                 >
                   <span className="text-base">🛍️</span>
                   <span className="text-[10px]">Cart</span>
@@ -84,7 +84,7 @@ export default function RootLayout({ children }) {
 
                 <Link 
                   href="/orders" 
-                  className={`flex flex-col items-center py-1 px-4 rounded-xl transition ${pathname === '/orders' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
+                  className={`flex flex-col items-center py-1 px-4 rounded-xl transition cursor-pointer ${pathname === '/orders' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
                 >
                   <span className="text-base">🥢</span>
                   <span className="text-[10px]">Orders</span>
@@ -92,7 +92,7 @@ export default function RootLayout({ children }) {
 
                 <Link 
                   href="/profile" 
-                  className={`flex flex-col items-center py-1 px-4 rounded-xl transition ${pathname === '/profile' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
+                  className={`flex flex-col items-center py-1 px-4 rounded-xl transition cursor-pointer ${pathname === '/profile' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
                 >
                   <span className="text-base">🍷</span>
                   <span className="text-[10px]">Profile</span>

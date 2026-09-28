@@ -14,20 +14,20 @@ export default function AdminRootLayout({ children }) {
       </head>
       
       {/* Outer theatrical background wrapper */}
-      <body className="bg-slate-950 text-slate-900 h-dvh w-screen m-0 p-0 flex justify-center items-center antialiased overflow-hidden selection:bg-emerald-500 selection:text-white">
+      <body className="bg-slate-950 text-slate-900 h-dvh w-screen m-0 p-0 flex justify-center items-center antialiased overflow-hidden selection:bg-orange-500 selection:text-white">
         
         {/* Responsive App Frame Container: White background matching customer frontend */}
         <div className="w-full h-full sm:h-[92vh] sm:max-h-[880px] sm:w-[410px] sm:rounded-[40px] bg-white shadow-2xl relative flex flex-col justify-between border-0 sm:border-[8px] border-slate-900 overflow-hidden">
           
           {/* Top Compact Brand Header */}
-          <header className="shrink-0 bg-white border-b border-slate-100 px-4 py-3 flex justify-between items-center z-30 shadow-sm">
+          <header className="shrink-0 bg-white border-b border-orange-100 px-4 py-3 flex justify-between items-center z-30 shadow-sm">
             <div className="flex items-center space-x-2">
-              <span className="w-7 h-7 bg-emerald-600 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-md shadow-emerald-600/25">⚡</span>
+              <span className="w-7 h-7 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-md shadow-orange-500/25">⚡</span>
               <h1 className="text-xs font-black tracking-tight text-slate-900">
-                Shop Matries <span className="text-emerald-600">Food Admin</span>
+                Shop Matries <span className="text-orange-600">Food Admin</span>
               </h1>
             </div>
-            <a href="http://localhost:3000" target="_blank" className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-200 transition">
+            <a href="http://localhost:3000" target="_blank" className="bg-orange-50 hover:bg-orange-100 text-orange-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-orange-200 transition">
               Customer App ↗
             </a>
           </header>
@@ -38,10 +38,10 @@ export default function AdminRootLayout({ children }) {
           </main>
 
           {/* Stationary Bottom Function & Navigation Bar */}
-          <nav className="shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-100 flex justify-around items-center py-2 px-0.5 z-35 shadow-lg">
+          <nav className="shrink-0 bg-white/95 backdrop-blur-md border-t border-orange-100 flex justify-around items-center py-2 px-0.5 z-35 shadow-lg">
             <Link 
               href="/" 
-              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
+              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
             >
               <span className="text-sm">📦</span>
               <span className="text-[9px]">Orders</span>
@@ -49,7 +49,7 @@ export default function AdminRootLayout({ children }) {
 
             <Link 
               href="/restaurants" 
-              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/restaurants' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
+              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/restaurants' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
             >
               <span className="text-sm">🍱</span>
               <span className="text-[9px]">Catalog</span>
@@ -57,7 +57,7 @@ export default function AdminRootLayout({ children }) {
 
             <Link 
               href="/add-sku" 
-              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/add-sku' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
+              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/add-sku' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
             >
               <span className="text-sm">🍲</span>
               <span className="text-[9px]">Add Dish</span>
@@ -65,7 +65,7 @@ export default function AdminRootLayout({ children }) {
 
             <Link 
               href="/offers" 
-              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/offers' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
+              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/offers' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
             >
               <span className="text-sm">🏷️</span>
               <span className="text-[9px]">Offers</span>
@@ -73,7 +73,7 @@ export default function AdminRootLayout({ children }) {
 
             <Link 
               href="/delivery-fee" 
-              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/delivery-fee' ? 'text-emerald-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
+              className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition ${pathname === '/delivery-fee' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
             >
               <span className="text-sm">🛵</span>
               <span className="text-[9px]">Delivery</span>

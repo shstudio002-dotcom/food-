@@ -177,7 +177,7 @@ export default function AdminLoginPage() {
         ==================================================== */}
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-600 text-xs font-bold px-4 py-3 rounded-2xl text-center shadow-sm">
+          <div className="mb-4 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold px-4 py-3 rounded-2xl text-center shadow-sm">
             {error}
           </div>
         )}
@@ -189,7 +189,7 @@ export default function AdminLoginPage() {
 
         <form
           onSubmit={handleLogin}
-          className="bg-white border border-slate-200 rounded-[26px] p-5 shadow-[0_8px_30px_rgba(15,23,42,0.08)] space-y-5"
+          className="bg-white border border-orange-100 rounded-[26px] p-5 shadow-[0_8px_30px_rgba(234,88,12,0.08)] space-y-5"
         >
 
           {/* MOBILE NUMBER */}
@@ -217,7 +217,7 @@ export default function AdminLoginPage() {
                     e.target.value.replace(/\D/g, '')
                   )
                 }
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-mono font-bold tracking-wide transition"
+                className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-mono font-bold tracking-wide transition"
                 required
               />
 
@@ -247,7 +247,7 @@ export default function AdminLoginPage() {
                 onChange={(e) =>
                   setPassword(e.target.value)
                 }
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
+                className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
                 required
               />
 
@@ -281,13 +281,13 @@ export default function AdminLoginPage() {
 
         <div className="flex items-center gap-3 my-5">
 
-          <div className="h-px bg-slate-200 flex-1" />
+          <div className="h-px bg-orange-100 flex-1" />
 
           <span className="text-[11px] text-slate-400 font-bold">
             OR
           </span>
 
-          <div className="h-px bg-slate-200 flex-1" />
+          <div className="h-px bg-orange-100 flex-1" />
 
         </div>
 
@@ -302,7 +302,7 @@ export default function AdminLoginPage() {
 
           <Link
             href="/register"
-            className="text-red-500 font-black ml-1 hover:text-orange-500 hover:underline transition"
+            className="text-orange-600 font-black ml-1 hover:text-orange-700 hover:underline transition"
           >
             Register here
           </Link>

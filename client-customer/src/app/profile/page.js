@@ -169,7 +169,7 @@ export default function ProfilePage() {
         {/* Orders */}
         <button
           onClick={() => router.push('/orders')}
-          className="w-full bg-slate-950 hover:bg-slate-800 text-white font-extrabold text-xs py-4 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 active:scale-[0.98]"
+          className="w-full bg-slate-950 hover:bg-slate-800 text-white font-extrabold text-xs py-4 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
         >
           <span className="text-base">
             📦
@@ -192,7 +192,7 @@ export default function ProfilePage() {
             localStorage.removeItem('shopmatries_phone');
             router.push('/login');
           }}
-          className="w-full bg-white hover:bg-orange-50 text-orange-600 font-extrabold text-xs py-4 rounded-2xl transition border border-orange-200 shadow-sm active:scale-[0.98]"
+          className="w-full bg-white hover:bg-orange-50 text-orange-600 font-extrabold text-xs py-4 rounded-2xl transition border border-orange-200 shadow-sm active:scale-[0.98] cursor-pointer"
         >
           <span className="text-base mr-2">
             🚪

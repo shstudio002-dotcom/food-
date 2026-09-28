@@ -6,22 +6,34 @@ export default function CartPage() {
   const router = useRouter();
  
   const [cartItems, setCartItems] = useState([]);
-  const [address, setAddress] = useState('Detecting exact GPS location...');
+  
+  // Detailed Address Fields
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('Shivamogga');
+  const [area, setArea] = useState('');
+  const [street, setStreet] = useState('');
+  
+  // Payment Method State
+  const [paymentMethod, setPaymentMethod] = useState('UPI'); // 'COD', 'UPI', 'Card', 'NetBanking'
+  const [upiProvider, setUpiProvider] = useState('PhonePe'); // 'PhonePe', 'Google Pay', 'Other UPI'
+
   const [gpsCoordinates, setGpsCoordinates] = useState({ lat: null, lng: null });
   const [isDetectingGPS, setIsDetectingGPS] = useState(false);
-  const [deliveryType, setDeliveryType] = useState('delivery'); // 'delivery' or 'pickup'
-  const [loading, setLoading] = useState(false);
   const [backendDeliveryFee, setBackendDeliveryFee] = useState(30);
- 
-  // State for logged-in user details
-  const [customerName, setCustomerName] = useState('Valued Customer');
-  const [customerPhone, setCustomerPhone] = useState('9108626303');
 
-  // Precise Latitude & Longitude Automatic GPS Detection
+  // Haversine distance formula to calculate distance from Shivamogga Hub (13.9299, 75.5681)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+  };
+
   const handleAutoDetectGPS = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
-      setAddress('Shivamogga, Karnataka');
       return;
     }
     setIsDetectingGPS(true);
@@ -29,43 +41,48 @@ export default function CartPage() {
       (position) => {
         const { latitude, longitude } = position.coords;
         setGpsCoordinates({ lat: latitude, lng: longitude });
-        setAddress(`[GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}] Exact Location Pin`);
+        const dist = calculateDistance(13.9299, 75.5681, latitude, longitude);
+        const roundedDist = Math.max(1, parseFloat(dist.toFixed(1)));
+        const calculatedFee = Math.round(roundedDist * 5); // 1km = ₹5 rule
+        setBackendDeliveryFee(calculatedFee);
         setIsDetectingGPS(false);
       },
-      (error) => {
-        console.error('GPS error:', error);
+      () => {
         setIsDetectingGPS(false);
-        setAddress('Shivamogga Hub (Default)');
-        alert('⚠️ Please enable GPS location permissions in your browser settings so the delivery partner can find your exact spot.');
+        alert('⚠️ Please enable GPS location permissions in your browser settings.');
       },
       { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
     );
   };
 
   useEffect(() => {
-    // Automatically trigger exact latitude/longitude GPS detection upon entering the cart
-    handleAutoDetectGPS();
+    const token = localStorage.getItem('shopmatries_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
 
-    // Load logged-in user name and phone from localStorage
-    const savedName = localStorage.getItem('shopmatries_username');
-    const savedPhone = localStorage.getItem('shopmatries_phone');
-    if (savedName) setCustomerName(savedName);
-    if (savedPhone) setCustomerPhone(savedPhone);
+    const savedName = localStorage.getItem('shopmatries_username') || '';
+    const savedPhone = localStorage.getItem('shopmatries_phone') || '';
+    if (savedName) setFullName(savedName);
+    if (savedPhone) setPhone(savedPhone);
+
+    const savedLat = localStorage.getItem('shopmatries_lat');
+    const savedLng = localStorage.getItem('shopmatries_lng');
+    if (savedLat && savedLng) {
+      const lat = parseFloat(savedLat);
+      const lng = parseFloat(savedLng);
+      setGpsCoordinates({ lat, lng });
+      const dist = calculateDistance(13.9299, 75.5681, lat, lng);
+      const roundedDist = Math.max(1, parseFloat(dist.toFixed(1)));
+      setBackendDeliveryFee(Math.round(roundedDist * 5));
+    } else {
+      handleAutoDetectGPS();
+    }
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
-
-    // Fetch dynamic delivery fee set by admin
-    fetch(`${API_URL}/api/settings/delivery-fee`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.deliveryFee !== undefined) {
-          setBackendDeliveryFee(Number(data.deliveryFee));
-        }
-      })
-      .catch((err) => console.error('Failed to fetch delivery fee:', err));
-
-    // Fetch catalog items and unified cart data supporting both storage keys
     const userPhoneKey = savedPhone || 'default_user';
+
     fetch(`${API_URL}/api/foods`)
       .then(res => res.json())
       .then(productsData => {
@@ -75,15 +92,12 @@ export default function CartPage() {
           customDetails = JSON.parse(localStorage.getItem(`shopmatries_custom_details_${userPhoneKey}`) || '{}');
         } catch (e) {}
 
-        // Check both user-isolated key and generic global cart key
         const savedCart = localStorage.getItem(`shopmatries_cart_${userPhoneKey}`) || localStorage.getItem('shopmatries_cart');
        
         if (savedCart) {
           const cartObj = JSON.parse(savedCart);
           const items = Object.entries(cartObj).map(([id, quantity]) => {
             const product = catalog.find(item => String(item._id || item.id) === String(id)) || customDetails[id];
-           
-            // Safe fallback matching for product names and hotel references
             const resolvedName = product?.englishName || product?.name || product?.dishName || 'Food Item';
 
             return product ? { 
@@ -101,8 +115,8 @@ export default function CartPage() {
           setCartItems([]);
         }
       })
-      .catch((err) => setCartItems([]));
-  }, []);
+      .catch(() => setCartItems([]));
+  }, [router]);
 
   const updateQuantity = (id, delta) => {
     const updated = cartItems.map(item => {
@@ -118,78 +132,43 @@ export default function CartPage() {
     const cartObj = {};
     updated.forEach(i => { cartObj[i.id] = i.quantity; });
    
-    // Save updates to both keys to guarantee consistency across pages
     const userPhoneKey = localStorage.getItem('shopmatries_phone') || 'default_user';
     localStorage.setItem(`shopmatries_cart_${userPhoneKey}`, JSON.stringify(cartObj));
     localStorage.setItem('shopmatries_cart', JSON.stringify(cartObj));
   };
 
-  const handleDetectGPS = () => {
-    handleAutoDetectGPS();
-  };
-
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const deliveryFee = deliveryType === 'delivery' && subtotal > 0 ? backendDeliveryFee : 0;
+  const deliveryFee = subtotal > 0 ? backendDeliveryFee : 0;
   const total = subtotal + deliveryFee;
 
-  // Final step: Save order to backend including exact GPS latitude/longitude formatting for Google Maps
-  const verifyAndSaveOrder = async () => {
-    try {
-      const activeName = localStorage.getItem('shopmatries_username') || customerName;
-      const activePhone = localStorage.getItem('shopmatries_phone') || customerPhone;
-      const primaryRestaurantId = cartItems.length > 0 && cartItems[0].hotelId ? cartItems[0].hotelId : '60c72b2f9b1d8b2f98e01234';
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
-
-      // Format precise location string with Google Maps link capability for the admin dashboard
-      const mapsGeoLink = gpsCoordinates.lat && gpsCoordinates.lng 
-        ? `[GPS: ${gpsCoordinates.lat}, ${gpsCoordinates.lng}] ` 
-        : '';
-      const finalRecordedAddress = deliveryType === 'delivery' ? `${mapsGeoLink}${address}` : 'Store Pickup';
-
-      const response = await fetch(`${API_URL}/api/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: activeName,
-          phone: activePhone,
-          restaurantId: primaryRestaurantId,
-          items: cartItems.map(i => ({ foodItem: i.id, name: i.name, quantity: i.quantity, price: i.price })),
-          totalPrice: total,
-          deliveryFee: deliveryFee,
-          address: finalRecordedAddress,
-          fulfillmentType: deliveryType,
-          paymentMode: 'Cash on Delivery',
-          paymentStatus: 'Pending (COD)'
-        })
-      });
-
-      const userPhoneKey = localStorage.getItem('shopmatries_phone') || 'default_user';
-      if (response.ok) {
-        localStorage.removeItem(`shopmatries_cart_${userPhoneKey}`);
-        localStorage.removeItem('shopmatries_cart');
-        alert('🎉 Order Placed Successfully!');
-        router.push('/orders');
-      } else {
-        alert('Order recording failed.');
-      }
-    } catch (err) {
-      console.error('Order save error:', err);
-      const userPhoneKey = localStorage.getItem('shopmatries_phone') || 'default_user';
-      localStorage.removeItem(`shopmatries_cart_${userPhoneKey}`);
-      localStorage.removeItem('shopmatries_cart');
-      alert('🎉 Order Placed Successfully!');
-      router.push('/orders');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCheckout = async () => {
+  // Connects cart details to the payment gateway page route
+  const handleProceedToPayment = () => {
     if (cartItems.length === 0) return alert('Your cart is empty!');
-    if (deliveryType === 'delivery' && !address.trim()) return alert('Please provide a delivery address!');
+    if (!fullName.trim() || !phone.trim() || !city.trim() || !area.trim() || !street.trim()) {
+      return alert('Please fill in all address details (Name, Phone, City, Area, Street)!');
+    }
 
-    setLoading(true);
-    await verifyAndSaveOrder();
+    const mapsGeoLink = gpsCoordinates.lat && gpsCoordinates.lng 
+      ? `[GPS: ${gpsCoordinates.lat}, ${gpsCoordinates.lng}] ` 
+      : '';
+    
+    const structuredAddress = `${mapsGeoLink}Street: ${street}, Area: ${area}, City: ${city}`;
+    const primaryRestaurantId = cartItems.length > 0 && cartItems[0].hotelId ? cartItems[0].hotelId : '60c72b2f9b1d8b2f98e01234';
+
+    const pendingOrder = {
+      customerName: fullName,
+      phone: phone,
+      restaurantId: primaryRestaurantId,
+      items: cartItems.map(i => ({ foodItem: i.id, name: i.name, quantity: i.quantity, price: i.price })),
+      totalPrice: total,
+      deliveryFee: deliveryFee,
+      address: structuredAddress,
+      fulfillmentType: 'delivery',
+      paymentMethodChoice: paymentMethod === 'UPI' ? `UPI (${upiProvider})` : paymentMethod
+    };
+
+    localStorage.setItem('shopmatries_pending_order', JSON.stringify(pendingOrder));
+    router.push('/payment');
   };
 
   return (
@@ -207,25 +186,13 @@ export default function CartPage() {
           <p className="text-slate-500 font-medium">Your cart is currently empty.</p>
           <button 
             onClick={() => router.push('/')}
-            className="bg-orange-500 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md hover:bg-orange-600 transition cursor-pointer"
+            className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md hover:from-red-600 hover:to-orange-600 transition cursor-pointer"
           >
             Browse Food Items
           </button>
         </div>
       ) : (
         <>
-          {/* Customer Account Info Card */}
-          <div className="bg-orange-50 border border-orange-200 p-3.5 rounded-2xl flex items-center justify-between shadow-sm">
-            <div className="space-y-0.5">
-              <p className="text-[9px] text-orange-700 font-bold uppercase tracking-wider">Ordering Account</p>
-              <p className="text-xs font-black text-slate-900">{customerName}</p>
-              <p className="text-xs font-mono font-bold text-slate-700">{customerPhone}</p>
-            </div>
-            <span className="text-xs bg-orange-500 text-white font-extrabold px-2.5 py-1 rounded-xl shadow">
-              Verified 👤
-            </span>
-          </div>
-
           <div className="space-y-3">
             {cartItems.map((item) => (
               <div key={item.id} className="flex items-center justify-between bg-white border border-orange-100 p-3 rounded-2xl shadow-sm">
@@ -250,34 +217,150 @@ export default function CartPage() {
             ))}
           </div>
 
-          <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl space-y-2">
-            <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">📦 Fulfillment Option</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setDeliveryType('delivery')} className={`py-2 px-3 rounded-xl text-xs font-bold transition border cursor-pointer ${deliveryType === 'delivery' ? 'bg-orange-500 text-white border-orange-500 shadow' : 'bg-white text-slate-700 border-slate-200'}`}>🏠 Home Delivery</button>
+          {/* Detailed Address Inputs */}
+          <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl space-y-3">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-black text-orange-900 uppercase tracking-wide">📍 Delivery Address & Contact</label>
+              <button onClick={handleAutoDetectGPS} disabled={isDetectingGPS} className="bg-white text-orange-700 border border-orange-200 hover:bg-orange-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
+                <span>{isDetectingGPS ? '🛰️ Capturing Pin...' : '📡 Refresh GPS Pin'}</span>
+              </button>
             </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <input 
+                type="text" 
+                placeholder="Full Name" 
+                value={fullName} 
+                onChange={(e) => setFullName(e.target.value)} 
+                className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-medium focus:outline-none"
+                required
+              />
+              <input 
+                type="tel" 
+                placeholder="Phone Number" 
+                value={phone} 
+                onChange={(e) => setPhone(e.target.value)} 
+                className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono font-bold focus:outline-none"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <input 
+                type="text" 
+                placeholder="City (e.g. Shivamogga)" 
+                value={city} 
+                onChange={(e) => setCity(e.target.value)} 
+                className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-medium focus:outline-none"
+                required
+              />
+              <input 
+                type="text" 
+                placeholder="Area / Locality" 
+                value={area} 
+                onChange={(e) => setArea(e.target.value)} 
+                className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-medium focus:outline-none"
+                required
+              />
+            </div>
+
+            <input 
+              type="text" 
+              placeholder="Street Address / House No / Landmark" 
+              value={street} 
+              onChange={(e) => setStreet(e.target.value)} 
+              className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-medium focus:outline-none"
+              required
+            />
+
+            {gpsCoordinates.lat && (
+              <p className="text-[10px] text-emerald-700 font-mono font-bold">
+                ✓ GPS Pin Captured: {gpsCoordinates.lat.toFixed(4)}, {gpsCoordinates.lng.toFixed(4)}
+              </p>
+            )}
           </div>
 
-          {deliveryType === 'delivery' && (
-            <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl space-y-3">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">📍 Exact GPS Coordinates Pin</label>
-                <button onClick={handleDetectGPS} disabled={isDetectingGPS} className="bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
-                  <span>{isDetectingGPS ? '🛰️ Capturing Pin...' : '📡 Re-detect Exact GPS'}</span>
-                </button>
+          {/* Payment Method Selector */}
+          <div className="bg-white border border-orange-100 p-4 rounded-2xl space-y-3 shadow-sm">
+            <h4 className="font-bold text-slate-900 text-sm border-b border-orange-100 pb-2">💳 Payment Method</h4>
+            
+            <div className="space-y-2.5">
+              <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-800 cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="payment" 
+                  checked={paymentMethod === 'COD'} 
+                  onChange={() => setPaymentMethod('COD')}
+                  className="accent-orange-500 w-4 h-4"
+                />
+                <span>Cash on Delivery</span>
+              </label>
+
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-800 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    checked={paymentMethod === 'UPI'} 
+                    onChange={() => setPaymentMethod('UPI')}
+                    className="accent-orange-500 w-4 h-4"
+                  />
+                  <span>UPI / Online Payment</span>
+                </label>
+
+                {paymentMethod === 'UPI' && (
+                  <div className="ml-6 pl-3 border-l-2 border-orange-200 flex gap-2">
+                    {['PhonePe', 'Google Pay', 'Other UPI'].map((provider) => (
+                      <button
+                        key={provider}
+                        type="button"
+                        onClick={() => setUpiProvider(provider)}
+                        className={`text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg border transition cursor-pointer ${
+                          upiProvider === provider
+                            ? 'bg-orange-500 text-white border-orange-500'
+                            : 'bg-orange-50 text-slate-700 border-orange-200'
+                        }`}
+                      >
+                        {provider}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="GPS Lat/Long coordinates..." className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 font-mono focus:outline-none" rows="2" />
+
+              <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-800 cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="payment" 
+                  checked={paymentMethod === 'Card'} 
+                  onChange={() => setPaymentMethod('Card')}
+                  className="accent-orange-500 w-4 h-4"
+                />
+                <span>Card (Credit / Debit)</span>
+              </label>
+
+              <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-800 cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="payment" 
+                  checked={paymentMethod === 'NetBanking'} 
+                  onChange={() => setPaymentMethod('NetBanking')}
+                  className="accent-orange-500 w-4 h-4"
+                />
+                <span>Net Banking</span>
+              </label>
             </div>
-          )}
+          </div>
 
           <div className="bg-white border border-orange-100 p-4 rounded-2xl space-y-3 shadow-sm">
             <h4 className="font-bold text-slate-900 text-sm border-b border-orange-100 pb-2">Bill Details</h4>
             <div className="flex justify-between text-xs text-slate-600"><span>Item Total</span><span className="font-semibold text-slate-800">₹{subtotal}</span></div>
-            <div className="flex justify-between text-xs text-slate-600"><span>Delivery Fee (30 mins)</span><span className="font-semibold text-slate-800">₹{deliveryFee}</span></div>
+            <div className="flex justify-between text-xs text-slate-600"><span>Delivery Fee (Distance-Based)</span><span className="font-semibold text-slate-800">₹{deliveryFee}</span></div>
             <div className="flex justify-between text-sm font-black text-slate-900 border-t border-orange-100 pt-3"><span>Total Amount</span><span className="text-orange-600">₹{total}</span></div>
           </div>
 
-          <button onClick={handleCheckout} disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-sm py-4 rounded-2xl shadow-xl transition cursor-pointer">
-            <span>{loading ? 'Processing...' : `Place Order (Pay ₹{total}) 💵`}</span>
+          <button onClick={handleProceedToPayment} className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-extrabold text-sm py-4 rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center space-x-2">
+            <span>Proceed to Secure Payment (₹{total}) ⚡</span>
           </button>
         </>
       )}

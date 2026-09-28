@@ -10,6 +10,7 @@ const restaurantRoutes = require('./routes/restaurantRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const orderSocket = require('./socket/orderSocket');
 const Offer = require('./models/Offer'); // Offer model for database persistence
+const Restaurant = require('./models/Restaurant'); // Restaurant model for operating hours
 
 const app = express();
 const server = http.createServer(app);
@@ -67,6 +68,25 @@ app.put('/api/settings/delivery-fee', (req, res) => {
     currentDeliveryFee = Number(req.body.deliveryFee);
   }
   res.json({ success: true, deliveryFee: currentDeliveryFee });
+});
+
+// ⏰ Restaurant Operating Hours & Status Endpoint
+app.put('/api/restaurants/:id/hours', async (req, res) => {
+  try {
+    const { autoMode, isManuallyOpen, operatingHours } = req.body;
+    const updatedRest = await Restaurant.findByIdAndUpdate(
+      req.params.id,
+      { autoMode, isManuallyOpen, operatingHours },
+      { new: true }
+    );
+    if (!updatedRest) {
+      return res.status(404).json({ success: false, error: 'Restaurant not found' });
+    }
+    res.json({ success: true, restaurant: updatedRest });
+  } catch (err) {
+    console.error('Failed to update restaurant hours:', err);
+    res.status(500).json({ success: false, error: 'Failed to update operating hours' });
+  }
 });
 
 // Offers Endpoints (Synced directly with MongoDB Atlas)

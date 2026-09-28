@@ -5,18 +5,79 @@ import { useRouter } from 'next/navigation';
 export default function CustomerHotelsPage() {
   const [hotels, setHotels] = useState({});
   const [hotelImages, setHotelImages] = useState({});
+  const [hotelDetailsMap, setHotelDetailsMap] = useState({});
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // Helper function to dynamically evaluate store open/closed status and schedule timings
+  const checkIfStoreIsOpen = (hotel) => {
+    if (!hotel) return false;
+    if (hotel.autoMode === false || hotel.manualOverride === true) {
+      return hotel.isManuallyOpen ?? false;
+    }
+    if (!hotel.operatingHours) return false;
+
+    const now = new Date();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentDayName = days[now.getDay()];
+    
+    const todaySchedule = hotel.operatingHours[currentDayName];
+    if (!todaySchedule || todaySchedule.closed) return false;
+
+    const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+    const [openHour, openMin] = (todaySchedule.open || '08:00').split(':').map(Number);
+    const [closeHour, closeMin] = (todaySchedule.close || '22:00').split(':').map(Number);
+    
+    return currentTimeMinutes >= (openHour * 60 + openMin) && currentTimeMinutes <= (closeHour * 60 + closeMin);
+  };
+
+  const getTodayTimingString = (hotel) => {
+    if (!hotel || !hotel.operatingHours) return 'Timings not set';
+    const now = new Date();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentDayName = days[now.getDay()];
+    const todaySchedule = hotel.operatingHours[currentDayName];
+    
+    if (!todaySchedule || todaySchedule.closed) return 'Closed Today';
+    return `${todaySchedule.open} - ${todaySchedule.close}`;
+  };
+
+  // Smart flexible lookup to match food item hotel names with backend restaurant records
+  const getHotelRecord = (name, detailsMap) => {
+    if (!name) return null;
+    const cleanKey = name.toLowerCase().trim();
+    if (detailsMap[cleanKey]) return detailsMap[cleanKey];
+
+    // Fallback: check if any restaurant name contains or matches closely
+    const matchedKey = Object.keys(detailsMap).find(
+      k => k.includes(cleanKey) || cleanKey.includes(k)
+    );
+    return matchedKey ? detailsMap[matchedKey] : null;
+  };
+
   useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
-    fetch(`${API_URL}/api/foods`) // Assumes your food items endpoint
+    // Fetch restaurants metadata (including operating hours and manual toggles)[cite: 9]
+    fetch(`${API_URL}/api/restaurants`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          // Group food dishes by hotel name and capture hotel images
+          const restMap = {};
+          data.forEach(r => {
+            const name = r.name || r.hotelName || r.restaurantName;
+            if (name) restMap[name.toLowerCase().trim()] = r;
+          });
+          setHotelDetailsMap(restMap);
+        }
+      })
+      .catch(() => {});
+
+    fetch(`${API_URL}/api/foods`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
           const grouped = {};
           const images = {};
 
@@ -25,7 +86,6 @@ export default function CustomerHotelsPage() {
             if (!grouped[hotelName]) grouped[hotelName] = [];
             grouped[hotelName].push(item);
 
-            // Capture hotel logo/image if present
             if (item.hotelImage || item.restaurantImage) {
               images[hotelName] = item.hotelImage || item.restaurantImage;
             }
@@ -67,6 +127,9 @@ export default function CustomerHotelsPage() {
         <div className="space-y-4">
           {Object.entries(hotels).map(([hotelName, foods]) => {
             const storeImg = hotelImages[hotelName];
+            const hotelObj = getHotelRecord(hotelName, hotelDetailsMap);
+            const isOpen = checkIfStoreIsOpen(hotelObj);
+            const timingStr = getTodayTimingString(hotelObj);
 
             return (
               <div key={hotelName} className="bg-white border border-orange-200 rounded-3xl p-4 shadow-sm space-y-3">
@@ -82,8 +145,14 @@ export default function CustomerHotelsPage() {
                       </div>
                     )}
                     <div>
-                      <h2 className="text-sm font-black text-slate-900">{hotelName}</h2>
-                      <p className="text-[11px] text-orange-600 font-bold">{foods.length} items available • Tap to view menu</p>
+                      <div className="flex items-center space-x-2">
+                        <h2 className="text-sm font-black text-slate-900">{hotelName}</h2>
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                          {isOpen ? '🟢 Open Now' : '🔴 Closed'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-orange-600 font-bold mt-0.5">⏰ Today: {timingStr}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">{foods.length} items available • Tap to view menu</p>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-slate-400">

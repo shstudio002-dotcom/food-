@@ -148,7 +148,7 @@ export default function Home() {
       let fetchedHotels = [];
 
       try {
-        const res = await fetch(`${API_URL}/api/foods/restaurants`);
+        const res = await fetch(`${API_URL}/api/restaurants`);
         const data = await res.json();
 
         if (Array.isArray(data) && data.length > 0) {

@@ -13,7 +13,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const API_URL =
       process.env.NEXT_PUBLIC_API_URL ||
-      'https://food-ohea.onrender.com';
+      'https://food-cgs4.onrender.com';
 
     try {
       const savedName = localStorage.getItem('shopmatries_username');

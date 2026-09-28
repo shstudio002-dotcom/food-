@@ -19,7 +19,7 @@ export default function AdminAddFoodDish() {
 
   // Fetch partner hotels directly from backend database
   useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/foods/restaurants`)
       .then(res => res.json())
@@ -93,7 +93,7 @@ export default function AdminAddFoodDish() {
     let finalHotelName = 'Partner Hotel';
     let finalHotelId = formData.hotelId;
     let finalHotelImage = formData.hotelImage;
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     try {
       // If a new hotel is typed, save it along with its specific photo to the database first

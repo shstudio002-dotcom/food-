@@ -10,7 +10,7 @@ export default function CustomerHotelsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/foods`) // Assumes your food items endpoint
       .then(res => res.json())

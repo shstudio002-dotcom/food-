@@ -21,7 +21,7 @@ export default function QuickMenuPage() {
 
     const API_URL =
       process.env.NEXT_PUBLIC_API_URL ||
-      'https://food-ohea.onrender.com';
+      'https://food-cgs4.onrender.com';
 
     // Fetch custom menu items from backend
     fetch(`${API_URL}/api/custom-menu`)

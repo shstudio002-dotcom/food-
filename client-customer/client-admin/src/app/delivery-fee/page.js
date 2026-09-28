@@ -7,7 +7,7 @@ export default function AdminDeliveryFeePage() {
 
   // Fetch current delivery fee from backend on mount
   useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/settings/delivery-fee`)
       .then(res => res.json())
@@ -24,7 +24,7 @@ export default function AdminDeliveryFeePage() {
   const handleSaveFee = (e) => {
     e.preventDefault();
     
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/settings/delivery-fee`, {
       method: 'PUT',

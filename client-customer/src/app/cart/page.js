@@ -52,7 +52,7 @@ export default function CartPage() {
     if (savedName) setCustomerName(savedName);
     if (savedPhone) setCustomerPhone(savedPhone);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     // Fetch dynamic delivery fee set by admin
     fetch(`${API_URL}/api/settings/delivery-fee`)
@@ -138,7 +138,7 @@ export default function CartPage() {
       const activeName = localStorage.getItem('shopmatries_username') || customerName;
       const activePhone = localStorage.getItem('shopmatries_phone') || customerPhone;
       const primaryRestaurantId = cartItems.length > 0 && cartItems[0].hotelId ? cartItems[0].hotelId : '60c72b2f9b1d8b2f98e01234';
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
       // Format precise location string with Google Maps link capability for the admin dashboard
       const mapsGeoLink = gpsCoordinates.lat && gpsCoordinates.lng 

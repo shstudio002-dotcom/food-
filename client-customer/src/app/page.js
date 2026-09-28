@@ -49,7 +49,7 @@ export default function Home() {
     // DO NOT CHANGE API URL
     const API_URL =
       process.env.NEXT_PUBLIC_API_URL ||
-      'https://food-ohea.onrender.com';
+      'https://food-cgs4.onrender.com';
 
     // Fetch live banner/offer data from backend
     fetch(`${API_URL}/api/offers`)

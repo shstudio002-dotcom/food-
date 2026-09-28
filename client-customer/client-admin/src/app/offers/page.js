@@ -15,7 +15,7 @@ export default function AdminOffersPage() {
 
   // Fetch initial banner/offer data from backend
   useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/offers`)
       .then(res => res.json())
@@ -80,7 +80,7 @@ export default function AdminOffersPage() {
   const handleSave = (e) => {
     e.preventDefault();
     
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/offers`, {
       method: 'PUT',

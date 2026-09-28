@@ -35,7 +35,7 @@ export default function AdminRegisterPage() {
 
     const API_URL =
       process.env.NEXT_PUBLIC_API_URL ||
-      'https://food-ohea.onrender.com';
+      'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',

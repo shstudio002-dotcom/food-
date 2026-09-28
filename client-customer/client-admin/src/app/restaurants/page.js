@@ -7,7 +7,7 @@ export default function AdminFoodCatalogManager() {
   const [message, setMessage] = useState('');
 
   const fetchProducts = () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/foods`)
       .then(res => res.json())
@@ -33,7 +33,7 @@ export default function AdminFoodCatalogManager() {
   // Save updated price directly to backend
   const handleSavePrice = (prod) => {
     const targetId = prod._id || prod.id;
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/foods/${targetId}`, {
       method: 'PUT',
@@ -54,7 +54,7 @@ export default function AdminFoodCatalogManager() {
   };
 
   const handleRemoveItem = (id) => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/foods/${id}`, {
       method: 'DELETE'

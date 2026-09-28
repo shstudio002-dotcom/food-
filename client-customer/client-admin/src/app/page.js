@@ -7,7 +7,7 @@ export default function AdminLiveOrders() {
   const [revenue, setRevenue] = useState(0);
 
   const fetchOrders = () => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/orders`)
       .then(res => res.json())
@@ -28,7 +28,7 @@ export default function AdminLiveOrders() {
   useEffect(() => {
     fetchOrders();
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     // Socket.io connection with polling fallback for stable connectivity
     const socket = io(API_URL, {
@@ -49,7 +49,7 @@ export default function AdminLiveOrders() {
     // Optimistic UI update for instant speed
     setOrders(prev => prev.map(o => (o._id === orderId || o.id === orderId) ? { ...o, status: newStatus, progress: newProgress } : o));
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/orders/${orderId}`, {
       method: 'PUT',
@@ -67,7 +67,7 @@ export default function AdminLiveOrders() {
     // Optimistic UI filter for instant speed
     setOrders(prev => prev.filter(o => o._id !== orderId && o.id !== orderId));
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/orders/${orderId}`, {
       method: 'DELETE'
@@ -93,7 +93,7 @@ export default function AdminLiveOrders() {
       return;
     }
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-ohea.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
     try {
       await Promise.all(

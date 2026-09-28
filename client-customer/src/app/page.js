@@ -44,7 +44,7 @@ export default function Home() {
     if (hotelObj.autoMode === false || hotelObj.manualOverride === true) {
       return hotelObj.isManuallyOpen ?? false;
     }
-    if (!hotelObj.operatingHours) return true;
+    if (!hotelObj.operatingHours) return false;
 
     const now = new Date();
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -63,21 +63,19 @@ export default function Home() {
     return currentTimeMinutes >= openTimeMinutes && currentTimeMinutes <= closeTimeMinutes;
   };
 
-  // Helper to show today's weekday timings with safe fallback
+  // Helper to show today's weekday timings strictly from database/admin settings (no fake defaults)
   const getTodayTimingString = (hotelObj) => {
+    if (!hotelObj || !hotelObj.operatingHours) return 'Timings not set';
     const now = new Date();
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const currentDayName = days[now.getDay()];
+    const todaySchedule = hotelObj.operatingHours[currentDayName];
     
-    const defaultHours = { open: '08:00', close: '22:00', closed: false };
-    const hoursMap = hotelObj && hotelObj.operatingHours ? hotelObj.operatingHours : {};
-    const todaySchedule = hoursMap[currentDayName] || defaultHours;
-    
-    if (todaySchedule.closed) return 'Closed Today';
+    if (!todaySchedule || todaySchedule.closed) return 'Closed Today';
     return `${todaySchedule.open} - ${todaySchedule.close}`;
   };
 
-  // Flexible database record lookup to prevent mismatch issues
+  // Strict database record lookup without fake default hours
   const getDbHotelRecord = (name, detailsMap, fallbackObj) => {
     if (!name) return fallbackObj;
     const cleanKey = name.toLowerCase().trim();
@@ -87,37 +85,25 @@ export default function Home() {
       k => k.includes(cleanKey) || cleanKey.includes(k)
     );
     
-    if (matchedKey && detailsMap[matchedKey]) {
-      return detailsMap[matchedKey];
-    }
-    
-    return {
-      ...fallbackObj,
-      autoMode: true,
-      isManuallyOpen: true,
-      operatingHours: {
-        Monday: { open: '08:00', close: '22:00', closed: false },
-        Tuesday: { open: '08:00', close: '22:00', closed: false },
-        Wednesday: { open: '08:00', close: '22:00', closed: false },
-        Thursday: { open: '08:00', close: '22:00', closed: false },
-        Friday: { open: '08:00', close: '23:00', closed: false },
-        Saturday: { open: '08:00', close: '23:00', closed: false },
-        Sunday: { open: '08:00', close: '22:00', closed: false }
-      }
-    };
+    return matchedKey ? detailsMap[matchedKey] : fallbackObj;
   };
 
   useEffect(() => {
     const savedLat = localStorage.getItem('shopmatries_lat');
     if (!savedLat) {
       setShowLocationPopup(true);
+    } else {
+      const savedLng = localStorage.getItem('shopmatries_lng');
+      if (savedLng) {
+        setUserLocationName(`GPS: ${parseFloat(savedLat).toFixed(2)}, ${parseFloat(savedLng).toFixed(2)}`);
+      }
     }
 
     const API_URL =
       process.env.NEXT_PUBLIC_API_URL ||
       'https://food-cgs4.onrender.com';
 
-    fetch(`${API_URL}/api/restaurants`)
+    fetch(`${API_URL}/api/foods/restaurants`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -162,7 +148,7 @@ export default function Home() {
       let fetchedHotels = [];
 
       try {
-        const res = await fetch(`${API_URL}/api/restaurants`);
+        const res = await fetch(`${API_URL}/api/foods/restaurants`);
         const data = await res.json();
 
         if (Array.isArray(data) && data.length > 0) {
@@ -269,6 +255,7 @@ export default function Home() {
     }
   }, []);
 
+  // 100% Real Exact GPS Location Fetching
   const handleTurnOnLocation = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
@@ -281,14 +268,15 @@ export default function Home() {
         const { latitude, longitude } = position.coords;
         localStorage.setItem('shopmatries_lat', latitude);
         localStorage.setItem('shopmatries_lng', longitude);
-        setUserLocationName(`GPS: ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+        setUserLocationName(`GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
         setShowLocationPopup(false);
       },
-      () => {
-        alert('⚠️ Location access denied. Using default Shivamogga Hub.');
+      (error) => {
+        console.error('GPS error:', error);
+        alert('⚠️ Unable to retrieve your exact location. Please enable GPS permissions in your browser settings.');
         setShowLocationPopup(false);
       },
-      { timeout: 15000, enableHighAccuracy: true }
+      { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
     );
   };
 
@@ -405,10 +393,10 @@ export default function Home() {
             </div>
             <div>
               <h3 className="text-base font-black text-slate-950">
-                Turn On Your Location
+                Turn On Your Exact GPS Location
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Enable precise GPS location to show nearby partner hotels and food items instantly around you.
+                Enable precise GPS location to show exact nearby partner hotels and delivery distance around you.
               </p>
             </div>
             <div className="space-y-2 pt-2">
@@ -416,7 +404,7 @@ export default function Home() {
                 onClick={handleTurnOnLocation}
                 className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md transition cursor-pointer active:scale-95"
               >
-                Turn On Location 🛰️
+                Turn On Exact GPS 🛰️
               </button>
               <button
                 onClick={() => setShowLocationPopup(false)}

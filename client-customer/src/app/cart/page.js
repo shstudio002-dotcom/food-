@@ -45,7 +45,7 @@ export default function CartPage() {
         localStorage.setItem('shopmatries_lng', longitude);
         const dist = calculateDistance(13.9299, 75.5681, latitude, longitude);
         const roundedDist = Math.max(1, parseFloat(dist.toFixed(1)));
-        const calculatedFee = Math.round(roundedDist * 0.10); // 1km = ₹5 rule
+        const calculatedFee = Math.round(roundedDist * 0.5); // 1km = ₹5 rule
         setBackendDeliveryFee(calculatedFee);
         setIsDetectingGPS(false);
       },

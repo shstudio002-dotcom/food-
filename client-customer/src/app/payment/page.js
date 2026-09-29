@@ -9,8 +9,8 @@ export default function PaymentGatewayPage() {
   const [utrNumber, setUtrNumber] = useState('');
 
   // Admin / Merchant Payment Details
-  const MERCHANT_UPI_ID = '9108626303@upi';
-  const MERCHANT_PHONE = '9108626303';
+  const MERCHANT_UPI_ID = '9481969309@axl'; 
+  const MERCHANT_PHONE = '9481969309';
 
   useEffect(() => {
     const pending = localStorage.getItem('shopmatries_pending_order');

@@ -346,10 +346,19 @@ export default function Home() {
     }
   };
 
-  const handleAddToCart = (id) => {
+  const handleAddToCart = (id, hotelNameField) => {
     if (isOutsideGeoFence) {
       return alert('⚠️ Cannot order: You are currently outside our delivery service zone.');
     }
+
+    // Verify if the hotel is currently open before allowing add to cart
+    if (hotelNameField) {
+      const dbHotel = getDbHotelRecord(hotelNameField, restaurantDetailsMap, null);
+      if (dbHotel && !checkIfStoreIsOpen(dbHotel)) {
+        return alert(`⚠️ Cannot order: ${hotelNameField} is currently closed!`);
+      }
+    }
+
     const token = localStorage.getItem('shopmatries_token');
     if (!token) {
       setShowLoginPrompt(true);
@@ -549,11 +558,11 @@ export default function Home() {
             </div>
 
             <button
-              onClick={() => router.push('/quick-menu')}
-              className="border border-orange-200 bg-orange-50 text-orange-600 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-sm hover:bg-orange-100 transition active:scale-95 cursor-pointer"
-            >
-              ⚡ Quick Menu & Catering
-            </button>
+    onClick={() => router.push('/quick-menu')}
+    className="border border-orange-200 bg-orange-50 text-orange-600 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-sm hover:bg-orange-100 transition active:scale-95 cursor-pointer leading-tight text-center"
+    >
+    ⚡ Quick Menu & <br />Catering
+    </button>
           </div>
 
           <div className="relative rounded-2xl p-3 text-white shadow-md overflow-hidden bg-slate-900 min-h-[90px] flex justify-between items-center">
@@ -849,6 +858,10 @@ export default function Home() {
                     'Midari hotel';
                   const itemRating = item.rating || '4.8';
 
+                  // Check if hotel is open
+                  const hotelDbRecord = getDbHotelRecord(itemHotelName, restaurantDetailsMap, null);
+                  const isHotelOpen = hotelDbRecord ? checkIfStoreIsOpen(hotelDbRecord) : true;
+
                   return (
                     <div
                       key={itemId}
@@ -870,8 +883,8 @@ export default function Home() {
                           <span className="absolute top-1 left-1 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow">
                             ⭐ Popular
                           </span>
-                          <span className="absolute top-1 right-1 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
-                            ★ {itemRating} / 5
+                          <span className={`absolute top-1 right-1 text-[8px] font-black px-1.5 py-0.5 rounded ${isHotelOpen ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
+                            {isHotelOpen ? '🟢 Open' : '🔴 Closed'}
                           </span>
                         </div>
 
@@ -883,9 +896,14 @@ export default function Home() {
                             {displayKannada}
                           </p>
                         )}
-                        <p className="text-[9px] text-orange-600 font-bold truncate mt-0.5">
-                          🏨 {itemHotelName}
-                        </p>
+                        <div className="flex justify-between items-center mt-0.5">
+                          <p className="text-[9px] text-orange-600 font-bold truncate">
+                            🏨 {itemHotelName}
+                          </p>
+                          <span className={`text-[8px] font-extrabold ${isHotelOpen ? 'text-emerald-700' : 'text-rose-600'}`}>
+                            {isHotelOpen ? 'Open' : 'Closed'}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="mt-2 pt-2 border-t border-orange-100 space-y-1.5">
@@ -898,9 +916,16 @@ export default function Home() {
                           </span>
                         </div>
 
-                        {qty === 0 ? (
+                        {!isHotelOpen ? (
                           <button
-                            onClick={() => handleAddToCart(itemId)}
+                            disabled
+                            className="w-full bg-slate-200 text-slate-500 font-bold text-[10px] py-1.5 rounded-lg cursor-not-allowed text-center"
+                          >
+                            Hotel Closed 🛑
+                          </button>
+                        ) : qty === 0 ? (
+                          <button
+                            onClick={() => handleAddToCart(itemId, itemHotelName)}
                             disabled={isOutsideGeoFence}
                             className={`w-full text-white font-bold text-[10px] py-1.5 rounded-lg transition shadow-sm ${
                               isOutsideGeoFence 
@@ -922,7 +947,7 @@ export default function Home() {
                               {qty}
                             </span>
                             <button
-                              onClick={() => handleAddToCart(itemId)}
+                              onClick={() => handleAddToCart(itemId, itemHotelName)}
                               disabled={isOutsideGeoFence}
                               className="w-5 h-5 flex items-center justify-center font-black text-xs hover:bg-red-700 rounded transition cursor-pointer"
                             >

@@ -9,8 +9,16 @@ export default function ProfilePage() {
     phone: '9108626303'
   });
   const [loading, setLoading] = useState(true);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem('shopmatries_token');
+    if (!token) {
+      setShowLoginPrompt(true);
+      setLoading(false);
+      return;
+    }
+
     const API_URL =
       process.env.NEXT_PUBLIC_API_URL ||
       'https://food-cgs4.onrender.com';
@@ -28,8 +36,6 @@ export default function ProfilePage() {
         setLoading(false);
       } else {
         // Fallback fetch from backend if localStorage is empty
-        const token = localStorage.getItem('shopmatries_token');
-
         fetch(`${API_URL}/api/auth/profile`, {
           method: 'GET',
           headers: {
@@ -55,6 +61,48 @@ export default function ProfilePage() {
       setLoading(false);
     }
   }, []);
+
+  if (showLoginPrompt) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white p-4 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-orange-200 rounded-3xl p-5 max-w-sm w-full space-y-4 shadow-2xl text-center">
+            <div className="w-14 h-14 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto text-2xl font-black shadow-inner">
+              🔒
+            </div>
+            <div>
+              <h3 className="text-base font-black text-slate-950">
+                Please Login or Register First
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                You must be signed in to add food items to your cart and place orders.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                onClick={() => router.push('/login')}
+                className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition cursor-pointer"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => router.push('/register')}
+                className="w-full bg-slate-100 text-slate-700 hover:bg-slate-200 font-extrabold text-xs py-3 rounded-xl transition cursor-pointer"
+              >
+                Register
+              </button>
+            </div>
+            <button
+              onClick={() => router.push('/')}
+              className="text-[11px] text-slate-400 font-bold hover:text-slate-600 pt-1 cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-white p-4 pb-28 space-y-5">

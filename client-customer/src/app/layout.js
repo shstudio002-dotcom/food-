@@ -23,7 +23,7 @@ export default function RootLayout({ children }) {
       <html lang="en" className="h-full">
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-          <title>Shopmatries Food Delivery</title>
+          <title>BuyBrigg Food Delivery</title>
         </head>
         <body className="bg-slate-950 text-slate-900 h-dvh w-screen m-0 p-0 flex justify-center items-center antialiased overflow-hidden">
           <div className="w-full h-full sm:h-[92vh] sm:max-h-[880px] sm:w-[410px] sm:rounded-[40px] bg-white shadow-2xl relative flex flex-col justify-between overflow-hidden">
@@ -40,7 +40,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className="h-full">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-        <title>Shopmatries Food Delivery</title>
+        <title>BuyBrigg Food Delivery</title>
       </head>
       
       {/* Outer theatrical background wrapper */}
@@ -78,7 +78,7 @@ export default function RootLayout({ children }) {
                   href="/cart" 
                   className={`flex flex-col items-center py-1 px-4 rounded-xl transition cursor-pointer ${pathname === '/cart' ? 'text-orange-600 font-bold scale-105' : 'text-slate-400 font-medium hover:text-slate-600'}`}
                 >
-                  <span className="text-base">🛍️</span>
+                  <span className="text-base">🛒</span>
                   <span className="text-[10px]">Cart</span>
                 </Link>
 

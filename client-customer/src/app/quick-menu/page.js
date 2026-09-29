@@ -373,6 +373,10 @@ export default function QuickMenuPage() {
           >
             Submit Catering Inquiry 🚀
           </button>
+          <h3>For any Enquiry please call this number <a href="tel:9108626303" className="text-orange-700 font-bold hover:underline">
+  📞 9108626303
+</a> </h3>
+          
         </form>
       )}
 

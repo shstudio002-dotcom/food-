@@ -14,17 +14,17 @@ export default function CartPage() {
   const [area, setArea] = useState('');
   const [street, setStreet] = useState('');
   
-  // Payment Method State
+  // Payment Method State (Card & NetBanking removed)
   const [paymentMethod, setPaymentMethod] = useState('UPI'); 
   const [upiProvider, setUpiProvider] = useState('PhonePe'); 
 
   const [gpsCoordinates, setGpsCoordinates] = useState({ lat: null, lng: null });
   const [isDetectingGPS, setIsDetectingGPS] = useState(false);
-  const [backendDeliveryFee, setBackendDeliveryFee] = useState(0);
+  const [backendDeliveryFee, setBackendDeliveryFee] = useState(30);
   
   // Admin Delivery Fee Settings & Geo-Fence validation states
   const [adminRatePerKm, setAdminRatePerKm] = useState(5);
-  const [adminBaseFee, setAdminBaseFee] = useState(0);
+  const [adminBaseFee, setAdminBaseFee] = useState(30);
   const [geoZone, setGeoZone] = useState(null);
   const [isOutsideGeoFence, setIsOutsideGeoFence] = useState(false);
   const [geoFenceMessage, setGeoFenceMessage] = useState('');
@@ -65,16 +65,19 @@ export default function CartPage() {
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
   };
 
-  // Recalculate delivery fee based on Hotel Location -> Customer Location distance
+  // Recalculate delivery fee based on Hotel Location -> Customer Location distance with robust fallbacks
   const updateDeliveryFeeBasedOnHotel = (custLat, custLng, itemsList, zoneData, currentRatePerKm, currentBaseFee) => {
+    const base = currentBaseFee > 0 ? currentBaseFee : 30;
+    setBackendDeliveryFee(base);
+
     if (!itemsList || itemsList.length === 0) return;
     
-    // Get hotel location from the first item in cart
+    // Get hotel location from the first item, with a fallback default hub coordinate if missing
     const firstItem = itemsList[0];
-    const hotelGps = extractGpsFromAddress(firstItem.hotelAddress);
+    const extractedGps = extractGpsFromAddress(firstItem.hotelAddress);
+    const hotelGps = extractedGps || { lat: 13.9299, lng: 75.5681 }; // Fallback hub (Shivamogga)
 
-    if (hotelGps && zoneData) {
-      // Validate against geo-fence zone center if defined
+    if (zoneData && custLat && custLng) {
       const distFromZoneCenter = calculateDistanceMeters(custLat, custLng, zoneData.centerLat, zoneData.centerLng);
       if (distFromZoneCenter > zoneData.radiusMeters) {
         setIsOutsideGeoFence(true);
@@ -84,20 +87,12 @@ export default function CartPage() {
         setIsOutsideGeoFence(false);
         setGeoFenceMessage('');
       }
+    }
 
-      // Calculate distance from Hotel to Customer
+    if (custLat && custLng) {
       const hotelToCustKm = calculateDistanceKm(hotelGps.lat, hotelGps.lng, custLat, custLng);
       const calculatedFee = Math.round(Math.max(1, hotelToCustKm) * currentRatePerKm);
-      setBackendDeliveryFee(Math.max(currentBaseFee, calculatedFee));
-    } else if (zoneData) {
-      const distFromZoneCenter = calculateDistanceMeters(custLat, custLng, zoneData.centerLat, zoneData.centerLng);
-      if (distFromZoneCenter > zoneData.radiusMeters) {
-        setIsOutsideGeoFence(true);
-        setGeoFenceMessage(`⚠️ Sorry! Your delivery location is outside our allowed service zone.`);
-      } else {
-        setIsOutsideGeoFence(false);
-        setGeoFenceMessage('');
-      }
+      setBackendDeliveryFee(Math.max(base, calculatedFee));
     }
   };
 
@@ -140,14 +135,14 @@ export default function CartPage() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
     const userPhoneKey = savedPhone || 'default_user';
 
-    // Fetch Admin Delivery Fee Settings from /api/settings/delivery-fee, Geo-Fence, and Foods simultaneously
+    // Fetch Admin Delivery Fee Settings from /api/settings/delivery-fee[cite: 5], Geo-Fence, and Foods simultaneously[cite: 7]
     Promise.all([
       fetch(`${API_URL}/api/settings/delivery-fee`).then(res => res.json()).catch(() => ({})),
       fetch(`${API_URL}/api/settings/geofence`).then(res => res.json()).catch(() => ({})),
       fetch(`${API_URL}/api/foods`).then(res => res.json()).catch(() => ([]))
     ]).then(([feeData, zoneData, productsData]) => {
       let currentRate = 5;
-      let currentBase = 0;
+      let currentBase = 30;
       if (feeData) {
         if (feeData.ratePerKm !== undefined) {
           currentRate = Number(feeData.ratePerKm);
@@ -156,6 +151,7 @@ export default function CartPage() {
         if (feeData.deliveryFee !== undefined) {
           currentBase = Number(feeData.deliveryFee);
           setAdminBaseFee(currentBase);
+          setBackendDeliveryFee(currentBase);
         }
       }
 
@@ -428,28 +424,6 @@ export default function CartPage() {
                   </div>
                 )}
               </div>
-
-              <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-800 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="payment" 
-                  checked={paymentMethod === 'Card'} 
-                  onChange={() => setPaymentMethod('Card')}
-                  className="accent-orange-500 w-4 h-4"
-                />
-                <span>Card (Credit / Debit)</span>
-              </label>
-
-              <label className="flex items-center space-x-2.5 text-xs font-bold text-slate-800 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="payment" 
-                  checked={paymentMethod === 'NetBanking'} 
-                  onChange={() => setPaymentMethod('NetBanking')}
-                  className="accent-orange-500 w-4 h-4"
-                />
-                <span>Net Banking</span>
-              </label>
             </div>
           </div>
 

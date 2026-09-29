@@ -29,7 +29,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update order status/progress
+// Update order status/progress/acceptedBy
 router.put('/:id', async (req, res) => {
   try {
     const updatedOrder = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });

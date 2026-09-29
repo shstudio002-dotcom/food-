@@ -6,6 +6,7 @@ export default function PaymentGatewayPage() {
   const router = useRouter();
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [utrNumber, setUtrNumber] = useState('');
 
   // Admin / Merchant Payment Details
   const MERCHANT_UPI_ID = '9108626303@upi';
@@ -26,9 +27,22 @@ export default function PaymentGatewayPage() {
 
   const handleExecutePaymentAndOrder = async () => {
     if (!orderData) return;
-    setLoading(true);
 
     const method = orderData.paymentMethodChoice || 'UPI';
+
+    // If Cash on Delivery, place order directly without UTR check
+    if (method.includes('Cash on Delivery')) {
+      await submitOrderToBackend('Pending (COD)', 'N/A');
+      return;
+    }
+
+    // Validate UTR Number for UPI / Online payments to block fake/unpaid checkouts
+    if (!utrNumber.trim() || utrNumber.trim().length < 10) {
+      alert('⚠️ Security Notice: Please enter a valid 12-digit UPI Transaction Reference (UTR) number from your payment app to place the order.');
+      return;
+    }
+
+    setLoading(true);
 
     // Handle Deep Linking / App Redirection for UPI apps using the merchant number/UPI ID
     if (method.includes('PhonePe')) {
@@ -39,36 +53,40 @@ export default function PaymentGatewayPage() {
       window.location.href = `upi://pay?pa=${MERCHANT_UPI_ID}&pn=ShopmatriesFood&am=${orderData.totalPrice}&cu=INR`;
     }
 
+    // Submit order to backend with UTR proof
+    await submitOrderToBackend(`Paid (UTR: ${utrNumber.trim()})`, utrNumber.trim());
+  };
+
+  const submitOrderToBackend = async (paymentStatusText, utrRef) => {
+    setLoading(true);
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
-    // Save confirmed order to backend after simulated or app-redirected payment completion
-    setTimeout(async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/orders`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...orderData,
-            paymentStatus: method.includes('Cash on Delivery') ? 'Pending (COD)' : `Paid to ${MERCHANT_PHONE} & Confirmed`
-          })
-        });
+    try {
+      const response = await fetch(`${API_URL}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...orderData,
+          paymentStatus: paymentStatusText,
+          utrNumber: utrRef
+        })
+      });
 
-        const userPhoneKey = orderData.phone || 'default_user';
-        if (response.ok || true) {
-          localStorage.removeItem(`shopmatries_cart_${userPhoneKey}`);
-          localStorage.removeItem('shopmatries_cart');
-          localStorage.removeItem('shopmatries_pending_order');
-          alert('🎉 Payment Confirmed & Order Placed Successfully!');
-          router.push('/orders');
-        } else {
-          alert('Order recording failed.');
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('Payment order error:', err);
+      const userPhoneKey = orderData.phone || 'default_user';
+      if (response.ok || true) {
+        localStorage.removeItem(`shopmatries_cart_${userPhoneKey}`);
+        localStorage.removeItem('shopmatries_cart');
+        localStorage.removeItem('shopmatries_pending_order');
+        alert('🎉 Payment Verified & Order Placed Successfully!');
         router.push('/orders');
+      } else {
+        alert('Order recording failed.');
+        setLoading(false);
       }
-    }, 2000);
+    } catch (err) {
+      console.error('Payment order error:', err);
+      router.push('/orders');
+    }
   };
 
   if (!orderData) {
@@ -78,6 +96,8 @@ export default function PaymentGatewayPage() {
       </main>
     );
   }
+
+  const isCOD = orderData.paymentMethodChoice?.includes('Cash on Delivery');
 
   return (
     <main className="max-w-md mx-auto p-4 space-y-5 pb-28 min-h-screen bg-white">
@@ -98,12 +118,13 @@ export default function PaymentGatewayPage() {
         </div>
       </div>
 
-      {/* Admin Payment Number Notice */}
-      <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl space-y-1.5 shadow-sm text-center">
-        <p className="text-xs font-black text-amber-900">📲 Merchant Payment Number</p>
-        <p className="text-sm font-black font-mono text-amber-800">{MERCHANT_PHONE}</p>
-        <p className="text-[11px] text-amber-700">Please make your payment directly to the merchant number above via UPI, GPay, or PhonePe.</p>
-      </div>
+      {!isCOD && (
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl space-y-2 shadow-sm text-center">
+          <p className="text-xs font-black text-amber-900">📲 Merchant Payment Number</p>
+          <p className="text-sm font-black font-mono text-amber-800">{MERCHANT_PHONE}</p>
+          <p className="text-[11px] text-amber-700">Pay via PhonePe, GPay, or UPI to the number above, then enter your UTR transaction reference below to secure your order.</p>
+        </div>
+      )}
 
       <div className="bg-white border border-orange-100 p-4 rounded-2xl space-y-2 shadow-sm">
         <h3 className="text-xs font-black text-slate-900 uppercase">Delivery & Contact</h3>
@@ -112,19 +133,28 @@ export default function PaymentGatewayPage() {
         <p className="text-xs text-slate-700 truncate"><strong>Address:</strong> {orderData.address}</p>
       </div>
 
-      <div className="bg-orange-50/50 border border-orange-100 p-3.5 rounded-2xl text-center space-y-1">
-        <p className="text-xs font-bold text-slate-800">Ready to complete payment?</p>
-        <p className="text-[10px] text-slate-500">
-          Clicking below will launch your selected payment app or confirm your order.
-        </p>
-      </div>
+      {!isCOD && (
+        <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl space-y-2 shadow-sm">
+          <label className="text-xs font-black text-orange-900 uppercase tracking-wide">🔑 Enter 12-Digit UTR / Transaction ID</label>
+          <input 
+            type="text" 
+            placeholder="e.g. 432109876543" 
+            value={utrNumber}
+            onChange={(e) => setUtrNumber(e.target.value)}
+            className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-slate-800 focus:outline-none"
+            maxLength={16}
+            required
+          />
+          <p className="text-[10px] text-slate-500">Orders without a valid UTR will not be accepted by the system.</p>
+        </div>
+      )}
 
       <button 
         onClick={handleExecutePaymentAndOrder} 
         disabled={loading} 
         className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-extrabold text-sm py-4 rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center space-x-2 active:scale-[0.98]"
       >
-        <span>{loading ? 'Processing & Redirecting...' : `Pay ₹{orderData.totalPrice} to ${MERCHANT_PHONE} & Confirm Order ⚡`}</span>
+        <span>{loading ? 'Processing & Verifying...' : 'Pay & Order'}</span>
       </button>
 
       <button 

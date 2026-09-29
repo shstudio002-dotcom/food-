@@ -135,7 +135,7 @@ export default function CartPage() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
     const userPhoneKey = savedPhone || 'default_user';
 
-    // Fetch Admin Delivery Fee Settings from /api/settings/delivery-fee[cite: 5], Geo-Fence, and Foods simultaneously[cite: 7]
+    // Fetch Admin Delivery Fee Settings from /api/settings/delivery-fee, Geo-Fence, and Foods simultaneously
     Promise.all([
       fetch(`${API_URL}/api/settings/delivery-fee`).then(res => res.json()).catch(() => ({})),
       fetch(`${API_URL}/api/settings/geofence`).then(res => res.json()).catch(() => ({})),
@@ -443,7 +443,7 @@ export default function CartPage() {
                 : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 cursor-pointer'
             }`}
           >
-            <span>{isOutsideGeoFence ? '🚫 Outside Delivery Zone' : `Proceed to Secure Payment (₹{total}) ⚡`}</span>
+            <span>{isOutsideGeoFence ? '🚫 Outside Delivery Zone' : 'Pay & Order Item ⚡'}</span>
           </button>
         </>
       )}

@@ -12,7 +12,8 @@ const orderSchema = new mongoose.Schema({
     }
   ],
   totalPrice: { type: Number, required: true },
-  deliveryFee: { type: Number, default: 30 },
+  deliveryFee: { type: Number, default: 0 },
+  ratePerKm: { type: Number, default: 5 },
   status: { type: String, default: 'Hub' },
   progress: { type: Number, default: 0 },
   paymentMode: { type: String, default: 'COD' },

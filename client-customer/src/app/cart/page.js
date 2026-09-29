@@ -15,21 +15,33 @@ export default function CartPage() {
   const [street, setStreet] = useState('');
   
   // Payment Method State
-  const [paymentMethod, setPaymentMethod] = useState('UPI'); // 'COD', 'UPI', 'Card', 'NetBanking'
-  const [upiProvider, setUpiProvider] = useState('PhonePe'); // 'PhonePe', 'Google Pay', 'Other UPI'
+  const [paymentMethod, setPaymentMethod] = useState('UPI'); 
+  const [upiProvider, setUpiProvider] = useState('PhonePe'); 
 
   const [gpsCoordinates, setGpsCoordinates] = useState({ lat: null, lng: null });
   const [isDetectingGPS, setIsDetectingGPS] = useState(false);
-  const [backendDeliveryFee, setBackendDeliveryFee] = useState(30);
+  const [backendDeliveryFee, setBackendDeliveryFee] = useState(0);
   
-  // Geo-Fence validation states
+  // Admin Delivery Fee Settings & Geo-Fence validation states
+  const [adminRatePerKm, setAdminRatePerKm] = useState(5);
+  const [adminBaseFee, setAdminBaseFee] = useState(0);
   const [geoZone, setGeoZone] = useState(null);
   const [isOutsideGeoFence, setIsOutsideGeoFence] = useState(false);
   const [geoFenceMessage, setGeoFenceMessage] = useState('');
 
+  // Helper to extract GPS coordinates from hotel address string (e.g. "[GPS: 13.9299, 75.5681]")
+  const extractGpsFromAddress = (addressStr) => {
+    if (!addressStr) return null;
+    const match = addressStr.match(/\[GPS:\s*([0-9.-]+),\s*([0-9.-]+)\]/);
+    if (match) {
+      return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+    }
+    return null;
+  };
+
   // Haversine distance formula to calculate distance in meters
   const calculateDistanceMeters = (lat1, lon1, lat2, lon2) => {
-    const R = 6371e3; // Earth radius in meters
+    const R = 6371e3; 
     const latRad1 = (lat1 * Math.PI) / 180;
     const latRad2 = (lat2 * Math.PI) / 180;
     const deltaLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -44,8 +56,8 @@ export default function CartPage() {
     return R * c;
   };
 
-  // Haversine distance formula to calculate distance in KM from Shivamogga Hub (13.9299, 75.5681)
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  // Haversine distance formula to calculate distance in KM
+  const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
@@ -53,20 +65,43 @@ export default function CartPage() {
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
   };
 
-  // Validate current GPS location against backend Geo-Fence zone
-  const validateGeoFence = (lat, lng, zone) => {
-    if (!zone) return;
-    const distanceMeters = calculateDistanceMeters(lat, lng, zone.centerLat, zone.centerLng);
-    if (distanceMeters > zone.radiusMeters) {
-      setIsOutsideGeoFence(true);
-      setGeoFenceMessage(`⚠️ Sorry! Your location is outside our delivery service zone (~${(distanceMeters / 1000).toFixed(1)} km away). Maximum allowed range is ${Math.round(zone.radiusMeters / 1000)} km.`);
-    } else {
-      setIsOutsideGeoFence(false);
-      setGeoFenceMessage('');
+  // Recalculate delivery fee based on Hotel Location -> Customer Location distance
+  const updateDeliveryFeeBasedOnHotel = (custLat, custLng, itemsList, zoneData, currentRatePerKm, currentBaseFee) => {
+    if (!itemsList || itemsList.length === 0) return;
+    
+    // Get hotel location from the first item in cart
+    const firstItem = itemsList[0];
+    const hotelGps = extractGpsFromAddress(firstItem.hotelAddress);
+
+    if (hotelGps && zoneData) {
+      // Validate against geo-fence zone center if defined
+      const distFromZoneCenter = calculateDistanceMeters(custLat, custLng, zoneData.centerLat, zoneData.centerLng);
+      if (distFromZoneCenter > zoneData.radiusMeters) {
+        setIsOutsideGeoFence(true);
+        setGeoFenceMessage(`⚠️ Sorry! Your delivery location is outside our allowed service zone (~${(distFromZoneCenter / 1000).toFixed(1)} km away).`);
+        return;
+      } else {
+        setIsOutsideGeoFence(false);
+        setGeoFenceMessage('');
+      }
+
+      // Calculate distance from Hotel to Customer
+      const hotelToCustKm = calculateDistanceKm(hotelGps.lat, hotelGps.lng, custLat, custLng);
+      const calculatedFee = Math.round(Math.max(1, hotelToCustKm) * currentRatePerKm);
+      setBackendDeliveryFee(Math.max(currentBaseFee, calculatedFee));
+    } else if (zoneData) {
+      const distFromZoneCenter = calculateDistanceMeters(custLat, custLng, zoneData.centerLat, zoneData.centerLng);
+      if (distFromZoneCenter > zoneData.radiusMeters) {
+        setIsOutsideGeoFence(true);
+        setGeoFenceMessage(`⚠️ Sorry! Your delivery location is outside our allowed service zone.`);
+      } else {
+        setIsOutsideGeoFence(false);
+        setGeoFenceMessage('');
+      }
     }
   };
 
-  const handleAutoDetectGPS = () => {
+  const handleAutoDetectGPS = (currentItems, zoneData, currentRatePerKm, currentBaseFee) => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
       return;
@@ -78,15 +113,9 @@ export default function CartPage() {
         setGpsCoordinates({ lat: latitude, lng: longitude });
         localStorage.setItem('shopmatries_lat', latitude);
         localStorage.setItem('shopmatries_lng', longitude);
-        const dist = calculateDistance(13.9299, 75.5681, latitude, longitude);
-        const roundedDist = Math.max(1, parseFloat(dist.toFixed(1)));
-        const calculatedFee = Math.round(roundedDist * 0.5); // 1km = ₹5 rule
-        setBackendDeliveryFee(calculatedFee);
         setIsDetectingGPS(false);
 
-        if (geoZone) {
-          validateGeoFence(latitude, longitude, geoZone);
-        }
+        updateDeliveryFeeBasedOnHotel(latitude, longitude, currentItems, zoneData, currentRatePerKm, currentBaseFee);
       },
       () => {
         setIsDetectingGPS(false);
@@ -109,70 +138,74 @@ export default function CartPage() {
     if (savedPhone) setPhone(savedPhone);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
-
-    // Fetch Geo-Fence settings from backend
-    fetch(`${API_URL}/api/settings/geofence`)
-      .then(res => res.json())
-      .then(zoneData => {
-        if (zoneData && zoneData.radiusMeters) {
-          setGeoZone(zoneData);
-          const savedLat = localStorage.getItem('shopmatries_lat');
-          const savedLng = localStorage.getItem('shopmatries_lng');
-          if (savedLat && savedLng) {
-            validateGeoFence(parseFloat(savedLat), parseFloat(savedLng), zoneData);
-          }
-        }
-      })
-      .catch(() => {});
-
-    const savedLat = localStorage.getItem('shopmatries_lat');
-    const savedLng = localStorage.getItem('shopmatries_lng');
-    if (savedLat && savedLng) {
-      const lat = parseFloat(savedLat);
-      const lng = parseFloat(savedLng);
-      setGpsCoordinates({ lat, lng });
-      const dist = calculateDistance(13.9299, 75.5681, lat, lng);
-      const roundedDist = Math.max(1, parseFloat(dist.toFixed(1)));
-      setBackendDeliveryFee(Math.round(roundedDist * 3));
-    } else {
-      handleAutoDetectGPS();
-    }
-
     const userPhoneKey = savedPhone || 'default_user';
 
-    fetch(`${API_URL}/api/foods`)
-      .then(res => res.json())
-      .then(productsData => {
-        const catalog = Array.isArray(productsData) ? productsData : [];
-        let customDetails = {};
-        try {
-          customDetails = JSON.parse(localStorage.getItem(`shopmatries_custom_details_${userPhoneKey}`) || '{}');
-        } catch (e) {}
-
-        const savedCart = localStorage.getItem(`shopmatries_cart_${userPhoneKey}`) || localStorage.getItem('shopmatries_cart');
-       
-        if (savedCart) {
-          const cartObj = JSON.parse(savedCart);
-          const items = Object.entries(cartObj).map(([id, quantity]) => {
-            const product = catalog.find(item => String(item._id || item.id) === String(id)) || customDetails[id];
-            const resolvedName = product?.englishName || product?.name || product?.dishName || 'Food Item';
-
-            return product ? { 
-              id: String(product._id || product.id),
-              name: resolvedName,
-              price: product.price || 0,
-              image: product.image || '',
-              hotelId: product.hotelId || '60c72b2f9b1d8b2f98e01234',
-              quantity 
-            } : null;
-          }).filter(Boolean);
-         
-          setCartItems(items);
-        } else {
-          setCartItems([]);
+    // Fetch Admin Delivery Fee Settings from /api/settings/delivery-fee, Geo-Fence, and Foods simultaneously
+    Promise.all([
+      fetch(`${API_URL}/api/settings/delivery-fee`).then(res => res.json()).catch(() => ({})),
+      fetch(`${API_URL}/api/settings/geofence`).then(res => res.json()).catch(() => ({})),
+      fetch(`${API_URL}/api/foods`).then(res => res.json()).catch(() => ([]))
+    ]).then(([feeData, zoneData, productsData]) => {
+      let currentRate = 5;
+      let currentBase = 0;
+      if (feeData) {
+        if (feeData.ratePerKm !== undefined) {
+          currentRate = Number(feeData.ratePerKm);
+          setAdminRatePerKm(currentRate);
         }
-      })
-      .catch(() => setCartItems([]));
+        if (feeData.deliveryFee !== undefined) {
+          currentBase = Number(feeData.deliveryFee);
+          setAdminBaseFee(currentBase);
+        }
+      }
+
+      let activeZone = null;
+      if (zoneData && zoneData.radiusMeters) {
+        activeZone = zoneData;
+        setGeoZone(zoneData);
+      }
+
+      const catalog = Array.isArray(productsData) ? productsData : [];
+      let customDetails = {};
+      try {
+        customDetails = JSON.parse(localStorage.getItem(`shopmatries_custom_details_${userPhoneKey}`) || '{}');
+      } catch (e) {}
+
+      const savedCart = localStorage.getItem(`shopmatries_cart_${userPhoneKey}`) || localStorage.getItem('shopmatries_cart');
+     
+      if (savedCart) {
+        const cartObj = JSON.parse(savedCart);
+        const items = Object.entries(cartObj).map(([id, quantity]) => {
+          const product = catalog.find(item => String(item._id || item.id) === String(id)) || customDetails[id];
+          const resolvedName = product?.englishName || product?.name || product?.dishName || 'Food Item';
+
+          return product ? { 
+            id: String(product._id || product.id),
+            name: resolvedName,
+            price: product.price || 0,
+            image: product.image || '',
+            hotelId: product.hotelId || '60c72b2f9b1d8b2f98e01234',
+            hotelAddress: product.address || product.hotelLocation || '',
+            quantity 
+          } : null;
+        }).filter(Boolean);
+       
+        setCartItems(items);
+
+        const savedLat = localStorage.getItem('shopmatries_lat');
+        const savedLng = localStorage.getItem('shopmatries_lng');
+        if (savedLat && savedLng) {
+          const lat = parseFloat(savedLat);
+          const lng = parseFloat(savedLng);
+          setGpsCoordinates({ lat, lng });
+          updateDeliveryFeeBasedOnHotel(lat, lng, items, activeZone, currentRate, currentBase);
+        } else {
+          handleAutoDetectGPS(items, activeZone, currentRate, currentBase);
+        }
+      } else {
+        setCartItems([]);
+      }
+    });
   }, [router]);
 
   const updateQuantity = (id, delta) => {
@@ -192,6 +225,10 @@ export default function CartPage() {
     const userPhoneKey = localStorage.getItem('shopmatries_phone') || 'default_user';
     localStorage.setItem(`shopmatries_cart_${userPhoneKey}`, JSON.stringify(cartObj));
     localStorage.setItem('shopmatries_cart', JSON.stringify(cartObj));
+
+    if (gpsCoordinates.lat && gpsCoordinates.lng) {
+      updateDeliveryFeeBasedOnHotel(gpsCoordinates.lat, gpsCoordinates.lng, updated, geoZone, adminRatePerKm, adminBaseFee);
+    }
   };
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -221,6 +258,7 @@ export default function CartPage() {
       items: cartItems.map(i => ({ foodItem: i.id, name: i.name, quantity: i.quantity, price: i.price })),
       totalPrice: total,
       deliveryFee: deliveryFee,
+      ratePerKm: adminRatePerKm,
       address: structuredAddress,
       fulfillmentType: 'delivery',
       paymentMethodChoice: paymentMethod === 'UPI' ? `UPI (${upiProvider})` : paymentMethod
@@ -285,7 +323,7 @@ export default function CartPage() {
           <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl space-y-3">
             <div className="flex justify-between items-center">
               <label className="text-xs font-black text-orange-900 uppercase tracking-wide">📍 Delivery Address & Contact</label>
-              <button onClick={handleAutoDetectGPS} disabled={isDetectingGPS} className="bg-white text-orange-700 border border-orange-200 hover:bg-orange-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
+              <button onClick={() => handleAutoDetectGPS(cartItems, geoZone, adminRatePerKm, adminBaseFee)} disabled={isDetectingGPS} className="bg-white text-orange-700 border border-orange-200 hover:bg-orange-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
                 <span>{isDetectingGPS ? '🛰️ Capturing Exact Pin...' : '📡 Refresh Exact GPS'}</span>
               </button>
             </div>
@@ -418,7 +456,7 @@ export default function CartPage() {
           <div className="bg-white border border-orange-100 p-4 rounded-2xl space-y-3 shadow-sm">
             <h4 className="font-bold text-slate-900 text-sm border-b border-orange-100 pb-2">Bill Details</h4>
             <div className="flex justify-between text-xs text-slate-600"><span>Item Total</span><span className="font-semibold text-slate-800">₹{subtotal}</span></div>
-            <div className="flex justify-between text-xs text-slate-600"><span>Delivery Fee (Distance-Based)</span><span className="font-semibold text-slate-800">₹{deliveryFee}</span></div>
+            <div className="flex justify-between text-xs text-slate-600"><span>Delivery Fee (Hotel to Customer @ ₹{adminRatePerKm}/km)</span><span className="font-semibold text-slate-800">₹{deliveryFee}</span></div>
             <div className="flex justify-between text-sm font-black text-slate-900 border-t border-orange-100 pt-3"><span>Total Amount</span><span className="text-orange-600">₹{total}</span></div>
           </div>
 

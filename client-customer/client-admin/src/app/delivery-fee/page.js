@@ -23,7 +23,7 @@ export default function AdminDeliveryFeePage() {
     }
   });
 
-  // Fetch delivery fee and partner restaurants on mount[cite: 10]
+  // Fetch delivery fee and partner restaurants on mount
   useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
@@ -98,7 +98,7 @@ export default function AdminDeliveryFeePage() {
     })
       .then(res => res.json())
       .then(() => {
-        setMessage('✅ Per-KM Delivery Fee updated & synced successfully!');
+        setMessage('✅ Per-KM Delivery Fee updated & synced successfully with customer app!');
         setTimeout(() => setMessage(''), 3000);
       })
       .catch((err) => {
@@ -170,17 +170,17 @@ export default function AdminDeliveryFeePage() {
             />
           </div>
         </div>
-        <p className="text-[10px] text-slate-500">Delivery charges will automatically calculate based on the distance between the hotel and customer coordinates multiplied by ₹{ratePerKm} per km.</p>
+        <p className="text-[10px] text-slate-500">Customer app will automatically calculate delivery charges based on hotel-to-customer distance multiplied by ₹{ratePerKm} per km.</p>
 
         <button 
           type="submit"
           className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white text-xs font-black py-3 rounded-xl shadow-lg shadow-orange-500/20 transition active:scale-95 cursor-pointer"
         >
-          Save Per-KM Delivery Fee ⚡
+          Save & Sync Per-KM Delivery Fee ⚡
         </button>
       </form>
 
-      {/* Operating Hours & Store Switch Form[cite: 10] */}
+      {/* Operating Hours & Store Switch Form */}
       <form onSubmit={handleSaveSchedule} className="bg-white border border-orange-100 p-5 rounded-3xl space-y-4 shadow-sm">
         <h3 className="text-xs font-black text-slate-900 uppercase">Store Operating Hours & Status Switch</h3>
         
@@ -197,7 +197,7 @@ export default function AdminDeliveryFeePage() {
           </select>
         </div>
 
-        {/* Operating Switch: Automatic vs Manual Override[cite: 10] */}
+        {/* Operating Switch: Automatic vs Manual Override */}
         <div className="bg-orange-50/60 p-4 rounded-2xl border border-orange-200 space-y-3">
           <div className="flex justify-between items-center">
             <div>
@@ -240,7 +240,7 @@ export default function AdminDeliveryFeePage() {
           )}
         </div>
 
-        {/* Weekly Timings Schedule[cite: 10] */}
+        {/* Weekly Timings Schedule */}
         <div className="space-y-2 pt-2">
           <h4 className="text-[11px] font-black text-slate-900 uppercase">Weekly Operating Schedule</h4>
           {Object.keys(schedule.operatingHours).map(day => {

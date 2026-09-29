@@ -21,14 +21,49 @@ export default function CartPage() {
   const [gpsCoordinates, setGpsCoordinates] = useState({ lat: null, lng: null });
   const [isDetectingGPS, setIsDetectingGPS] = useState(false);
   const [backendDeliveryFee, setBackendDeliveryFee] = useState(30);
+  
+  // Geo-Fence validation states
+  const [geoZone, setGeoZone] = useState(null);
+  const [isOutsideGeoFence, setIsOutsideGeoFence] = useState(false);
+  const [geoFenceMessage, setGeoFenceMessage] = useState('');
 
-  // Haversine distance formula to calculate distance from Shivamogga Hub (13.9299, 75.5681)
+  // Haversine distance formula to calculate distance in meters
+  const calculateDistanceMeters = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // Earth radius in meters
+    const latRad1 = (lat1 * Math.PI) / 180;
+    const latRad2 = (lat2 * Math.PI) / 180;
+    const deltaLat = ((lat2 - lat1) * Math.PI) / 180;
+    const deltaLng = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+      Math.cos(latRad1) * Math.cos(latRad2) *
+      Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+      
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Haversine distance formula to calculate distance in KM from Shivamogga Hub (13.9299, 75.5681)
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+  };
+
+  // Validate current GPS location against backend Geo-Fence zone
+  const validateGeoFence = (lat, lng, zone) => {
+    if (!zone) return;
+    const distanceMeters = calculateDistanceMeters(lat, lng, zone.centerLat, zone.centerLng);
+    if (distanceMeters > zone.radiusMeters) {
+      setIsOutsideGeoFence(true);
+      setGeoFenceMessage(`⚠️ Sorry! Your location is outside our delivery service zone (~${(distanceMeters / 1000).toFixed(1)} km away). Maximum allowed range is ${Math.round(zone.radiusMeters / 1000)} km.`);
+    } else {
+      setIsOutsideGeoFence(false);
+      setGeoFenceMessage('');
+    }
   };
 
   const handleAutoDetectGPS = () => {
@@ -48,6 +83,10 @@ export default function CartPage() {
         const calculatedFee = Math.round(roundedDist * 0.5); // 1km = ₹5 rule
         setBackendDeliveryFee(calculatedFee);
         setIsDetectingGPS(false);
+
+        if (geoZone) {
+          validateGeoFence(latitude, longitude, geoZone);
+        }
       },
       () => {
         setIsDetectingGPS(false);
@@ -69,6 +108,23 @@ export default function CartPage() {
     if (savedName) setFullName(savedName);
     if (savedPhone) setPhone(savedPhone);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
+
+    // Fetch Geo-Fence settings from backend
+    fetch(`${API_URL}/api/settings/geofence`)
+      .then(res => res.json())
+      .then(zoneData => {
+        if (zoneData && zoneData.radiusMeters) {
+          setGeoZone(zoneData);
+          const savedLat = localStorage.getItem('shopmatries_lat');
+          const savedLng = localStorage.getItem('shopmatries_lng');
+          if (savedLat && savedLng) {
+            validateGeoFence(parseFloat(savedLat), parseFloat(savedLng), zoneData);
+          }
+        }
+      })
+      .catch(() => {});
+
     const savedLat = localStorage.getItem('shopmatries_lat');
     const savedLng = localStorage.getItem('shopmatries_lng');
     if (savedLat && savedLng) {
@@ -82,7 +138,6 @@ export default function CartPage() {
       handleAutoDetectGPS();
     }
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
     const userPhoneKey = savedPhone || 'default_user';
 
     fetch(`${API_URL}/api/foods`)
@@ -145,6 +200,9 @@ export default function CartPage() {
 
   const handleProceedToPayment = () => {
     if (cartItems.length === 0) return alert('Your cart is empty!');
+    if (isOutsideGeoFence) {
+      return alert('⚠️ Cannot place order: Your delivery location is outside our allowed service zone boundary.');
+    }
     if (!fullName.trim() || !phone.trim() || !city.trim() || !area.trim() || !street.trim()) {
       return alert('Please fill in all address details (Name, Phone, City, Area, Street)!');
     }
@@ -194,6 +252,12 @@ export default function CartPage() {
         </div>
       ) : (
         <>
+          {geoFenceMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-bold p-3 rounded-2xl text-center shadow-sm">
+              {geoFenceMessage}
+            </div>
+          )}
+
           <div className="space-y-3">
             {cartItems.map((item) => (
               <div key={item.id} className="flex items-center justify-between bg-white border border-orange-100 p-3 rounded-2xl shadow-sm">
@@ -273,9 +337,9 @@ export default function CartPage() {
               required
             />
 
-            {gpsCoordinates.lat && (
+            {gpsCoordinates.lat && !isOutsideGeoFence && (
               <p className="text-[10px] text-emerald-700 font-mono font-bold">
-                ✓ Exact GPS Pin Secured: {gpsCoordinates.lat.toFixed(6)}, {gpsCoordinates.lng.toFixed(6)}
+                ✓ Exact GPS Pin Secured & Within Service Zone: {gpsCoordinates.lat.toFixed(6)}, {gpsCoordinates.lng.toFixed(6)}
               </p>
             )}
           </div>
@@ -358,8 +422,16 @@ export default function CartPage() {
             <div className="flex justify-between text-sm font-black text-slate-900 border-t border-orange-100 pt-3"><span>Total Amount</span><span className="text-orange-600">₹{total}</span></div>
           </div>
 
-          <button onClick={handleProceedToPayment} className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-extrabold text-sm py-4 rounded-2xl shadow-xl transition cursor-pointer flex items-center justify-center space-x-2">
-            <span>Proceed to Secure Payment (₹{total}) ⚡</span>
+          <button 
+            onClick={handleProceedToPayment} 
+            disabled={isOutsideGeoFence}
+            className={`w-full text-white font-extrabold text-sm py-4 rounded-2xl shadow-xl transition flex items-center justify-center space-x-2 ${
+              isOutsideGeoFence 
+                ? 'bg-slate-300 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 cursor-pointer'
+            }`}
+          >
+            <span>{isOutsideGeoFence ? '🚫 Outside Delivery Zone' : `Proceed to Secure Payment (₹{total}) ⚡`}</span>
           </button>
         </>
       )}

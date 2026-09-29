@@ -15,11 +15,16 @@ export default function QuickMenuPage() {
   const [quickCatalog, setQuickCatalog] = useState([]);
   const [cart, setCart] = useState({});
 
+  // Get user specific key for cart persistence
+  const getUserPhoneKey = () => {
+    return localStorage.getItem('shopmatries_phone') || 'default_user';
+  };
+
   useEffect(() => {
     const API_URL =
       process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
 
-    // Fetch live food catalog from backend[cite: 6]
+    // Fetch live food catalog from backend
     fetch(`${API_URL}/api/foods`)
       .then(res => res.json())
       .then(data => {
@@ -33,7 +38,8 @@ export default function QuickMenuPage() {
       });
 
     try {
-      const savedCart = localStorage.getItem('shopmatries_cart');
+      const userPhoneKey = getUserPhoneKey();
+      const savedCart = localStorage.getItem(`shopmatries_cart_${userPhoneKey}`) || localStorage.getItem('shopmatries_cart');
       if (savedCart) setCart(JSON.parse(savedCart));
     } catch (e) {
       console.error(e);
@@ -52,6 +58,8 @@ export default function QuickMenuPage() {
     }
 
     setCart(updated);
+    const userPhoneKey = getUserPhoneKey();
+    localStorage.setItem(`shopmatries_cart_${userPhoneKey}`, JSON.stringify(updated));
     localStorage.setItem('shopmatries_cart', JSON.stringify(updated));
   };
 

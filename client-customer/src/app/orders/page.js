@@ -235,6 +235,7 @@ export default function OrdersPage() {
             const currentProgressNum = order.progress !== undefined ? order.progress : (order.status === 'Delivered' ? 100 : 0);
             const progress = getProgressDetails(order.status, currentProgressNum);
             const isDelivered = currentProgressNum === 100 || order.status === 'Delivered';
+            const riderLoc = riderLocations[orderId];
 
             return (
               <div
@@ -281,6 +282,13 @@ export default function OrdersPage() {
                     <span>Near Area (70%)</span>
                     <span>Delivered (100%)</span>
                   </div>
+
+                  {riderLoc && (
+                    <div className="bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-[10px] font-mono text-emerald-400 flex items-center justify-between">
+                      <span>📡 Live Rider GPS:</span>
+                      <span>{riderLoc.lat.toFixed(5)}, {riderLoc.lng.toFixed(5)}</span>
+                    </div>
+                  )}
                 </div>
 
                 {isDelivered && (

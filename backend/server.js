@@ -11,6 +11,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const orderSocket = require('./socket/orderSocket');
 const Offer = require('./models/Offer'); // Offer model for database persistence
 const Restaurant = require('./models/Restaurant'); // Restaurant model for operating hours
+const GeoFence = require('./models/GeoFence'); // GeoFence model for database persistence
 
 const app = express();
 const server = http.createServer(app);
@@ -68,6 +69,52 @@ app.put('/api/settings/delivery-fee', (req, res) => {
     currentDeliveryFee = Number(req.body.deliveryFee);
   }
   res.json({ success: true, deliveryFee: currentDeliveryFee });
+});
+
+// Geo-Fence Endpoints (Synced directly with MongoDB Atlas)
+app.get('/api/settings/geofence', async (req, res) => {
+  try {
+    const zone = await GeoFence.findOne().sort({ updatedAt: -1 });
+    
+    if (!zone) {
+      return res.status(404).json({ message: 'No geo-fence zone configured yet.' });
+    }
+    
+    res.status(200).json(zone);
+  } catch (err) {
+    console.error('Error fetching geo-fence:', err);
+    res.status(500).json({ error: 'Server error while fetching geo-fence settings.' });
+  }
+});
+
+app.put('/api/settings/geofence', async (req, res) => {
+  try {
+    const { centerLat, centerLng, radiusMeters } = req.body;
+
+    if (centerLat == null || centerLng == null || radiusMeters == null) {
+      return res.status(400).json({ error: 'Missing required geo-fence parameters.' });
+    }
+
+    let zone = await GeoFence.findOne();
+    
+    if (zone) {
+      zone.centerLat = centerLat;
+      zone.centerLng = centerLng;
+      zone.radiusMeters = radiusMeters;
+      await zone.save();
+    } else {
+      zone = await GeoFence.create({ centerLat, centerLng, radiusMeters });
+    }
+
+    res.status(200).json({ 
+      success: true,
+      message: 'Geo-fence successfully saved & synced!', 
+      zone 
+    });
+  } catch (err) {
+    console.error('Error saving geo-fence:', err);
+    res.status(500).json({ error: 'Server error while saving geo-fence settings.' });
+  }
 });
 
 // ⏰ Restaurant Operating Hours & Status Endpoint

@@ -38,6 +38,41 @@ export default function Home() {
   const [showLocationPopup, setShowLocationPopup] = useState(false);
   const [userLocationName, setUserLocationName] = useState('Shivamogga Hub');
 
+  // Geo-Fence validation states
+  const [geoZone, setGeoZone] = useState(null);
+  const [isOutsideGeoFence, setIsOutsideGeoFence] = useState(false);
+  const [geoFenceWarningMsg, setGeoFenceWarningMsg] = useState('');
+
+  // Haversine distance formula to calculate distance in meters
+  const calculateDistanceMeters = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // Earth radius in meters
+    const latRad1 = (lat1 * Math.PI) / 180;
+    const latRad2 = (lat2 * Math.PI) / 180;
+    const deltaLat = ((lat2 - lat1) * Math.PI) / 180;
+    const deltaLng = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+      Math.cos(latRad1) * Math.cos(latRad2) *
+      Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+      
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Validate current GPS location against backend Geo-Fence zone
+  const validateGeoFence = (lat, lng, zone) => {
+    if (!zone) return;
+    const distanceMeters = calculateDistanceMeters(lat, lng, zone.centerLat, zone.centerLng);
+    if (distanceMeters > zone.radiusMeters) {
+      setIsOutsideGeoFence(true);
+      setGeoFenceWarningMsg(`⚠️ Warning: You are outside our delivery service zone (~${(distanceMeters / 1000).toFixed(1)} km away). Ordering will be blocked.`);
+    } else {
+      setIsOutsideGeoFence(false);
+      setGeoFenceWarningMsg('');
+    }
+  };
+
   // Helper function to dynamically check if a restaurant is open based strictly on database/admin settings
   const checkIfStoreIsOpen = (hotelObj) => {
     if (!hotelObj) return false;
@@ -90,6 +125,25 @@ export default function Home() {
   };
 
   useEffect(() => {
+    const API_URL =
+      process.env.NEXT_PUBLIC_API_URL ||
+      'https://food-cgs4.onrender.com';
+
+    // Fetch Geo-Fence settings from backend
+    fetch(`${API_URL}/api/settings/geofence`)
+      .then(res => res.json())
+      .then(zoneData => {
+        if (zoneData && zoneData.radiusMeters) {
+          setGeoZone(zoneData);
+          const savedLat = localStorage.getItem('shopmatries_lat');
+          const savedLng = localStorage.getItem('shopmatries_lng');
+          if (savedLat && savedLng) {
+            validateGeoFence(parseFloat(savedLat), parseFloat(savedLng), zoneData);
+          }
+        }
+      })
+      .catch(() => {});
+
     const savedLat = localStorage.getItem('shopmatries_lat');
     if (!savedLat) {
       setShowLocationPopup(true);
@@ -99,10 +153,6 @@ export default function Home() {
         setUserLocationName(`GPS: ${parseFloat(savedLat).toFixed(2)}, ${parseFloat(savedLng).toFixed(2)}`);
       }
     }
-
-    const API_URL =
-      process.env.NEXT_PUBLIC_API_URL ||
-      'https://food-cgs4.onrender.com';
 
     fetch(`${API_URL}/api/foods/restaurants`)
       .then(res => res.json())
@@ -271,6 +321,10 @@ export default function Home() {
         localStorage.setItem('shopmatries_lng', longitude);
         setUserLocationName(`GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
         setShowLocationPopup(false);
+
+        if (geoZone) {
+          validateGeoFence(latitude, longitude, geoZone);
+        }
       },
       (error) => {
         console.error('GPS error:', error);
@@ -293,6 +347,9 @@ export default function Home() {
   };
 
   const handleAddToCart = (id) => {
+    if (isOutsideGeoFence) {
+      return alert('⚠️ Cannot order: You are currently outside our delivery service zone.');
+    }
     const token = localStorage.getItem('shopmatries_token');
     if (!token) {
       setShowLoginPrompt(true);
@@ -471,6 +528,12 @@ export default function Home() {
             📍 {userLocationName}
           </button>
         </div>
+
+        {geoFenceWarningMsg && (
+          <div className="bg-red-50 border-b border-red-200 text-red-700 text-[11px] font-bold p-2 text-center">
+            {geoFenceWarningMsg}
+          </div>
+        )}
 
         <div className="px-4 pt-3 pb-2 space-y-2.5 border-b border-orange-100">
           <div className="flex justify-between items-center">
@@ -838,9 +901,14 @@ export default function Home() {
                         {qty === 0 ? (
                           <button
                             onClick={() => handleAddToCart(itemId)}
-                            className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold text-[10px] py-1.5 rounded-lg transition shadow-sm active:scale-95 cursor-pointer"
+                            disabled={isOutsideGeoFence}
+                            className={`w-full text-white font-bold text-[10px] py-1.5 rounded-lg transition shadow-sm ${
+                              isOutsideGeoFence 
+                                ? 'bg-slate-300 cursor-not-allowed' 
+                                : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 active:scale-95 cursor-pointer'
+                            }`}
                           >
-                            + Add
+                            {isOutsideGeoFence ? 'Outside Zone' : '+ Add'}
                           </button>
                         ) : (
                           <div className="flex items-center justify-between bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg px-1.5 py-1 shadow-sm">
@@ -855,6 +923,7 @@ export default function Home() {
                             </span>
                             <button
                               onClick={() => handleAddToCart(itemId)}
+                              disabled={isOutsideGeoFence}
                               className="w-5 h-5 flex items-center justify-center font-black text-xs hover:bg-red-700 rounded transition cursor-pointer"
                             >
                               +
@@ -896,6 +965,9 @@ export default function Home() {
 
             <button
               onClick={() => {
+                if (isOutsideGeoFence) {
+                  return alert('⚠️ Cannot checkout: Your delivery location is outside our allowed service zone.');
+                }
                 const token = localStorage.getItem('shopmatries_token');
                 if (!token) {
                   setShowLoginPrompt(true);
@@ -903,9 +975,14 @@ export default function Home() {
                 }
                 router.push('/cart');
               }}
-              className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-extrabold text-[11px] px-3 py-2.5 rounded-xl transition shadow-md flex items-center space-x-1 active:scale-95 cursor-pointer"
+              disabled={isOutsideGeoFence}
+              className={`font-extrabold text-[11px] px-3 py-2.5 rounded-xl transition shadow-md flex items-center space-x-1 ${
+                isOutsideGeoFence 
+                  ? 'bg-slate-300 text-slate-600 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white active:scale-95 cursor-pointer'
+              }`}
             >
-              <span>View Cart & Checkout</span>
+              <span>{isOutsideGeoFence ? 'Outside Zone' : 'View Cart & Checkout'}</span>
               <span>➔</span>
             </button>
           </div>

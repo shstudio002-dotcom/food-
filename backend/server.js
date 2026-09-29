@@ -9,9 +9,9 @@ const authRoutes = require('./routes/authRoutes');
 const restaurantRoutes = require('./routes/restaurantRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const orderSocket = require('./socket/orderSocket');
-const Offer = require('./models/Offer'); // Offer model for database persistence
-const Restaurant = require('./models/Restaurant'); // Restaurant model for operating hours
-const GeoFence = require('./models/GeoFence'); // GeoFence model for database persistence
+const Offer = require('./models/Offer'); // Offer model for database persistence[cite: 6]
+const Restaurant = require('./models/Restaurant'); // Restaurant model for operating hours[cite: 6]
+const GeoFence = require('./models/GeoFence'); // GeoFence model for database persistence[cite: 6]
 
 const app = express();
 const server = http.createServer(app);
@@ -19,10 +19,10 @@ const io = new Server(server, {
   cors: { origin: '*' }
 });
 
-// Make socket instance globally accessible in routes
+// Make socket instance globally accessible in routes[cite: 6]
 app.set('io', io);
 
-// Connect to MongoDB Atlas (shopmatries database)
+// Connect to MongoDB Atlas (shopmatries database)[cite: 6]
 connectDB();
 
 app.use(express.json({ limit: '10mb' }));
@@ -31,9 +31,10 @@ app.use(cors());
 
 // Global storage stores
 let currentDeliveryFee = 30;
+let currentRatePerKm = 5; // 👈 Added ratePerKm global store variable
 let customMenuStore = [];
 
-// 🚀 Root Status Endpoint (Fixes 404 Not Found on Render root URL)
+// 🚀 Root Status Endpoint (Fixes 404 Not Found on Render root URL)[cite: 6]
 app.get('/', (req, res) => {
   res.status(200).json({ 
     status: 'success',
@@ -42,7 +43,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// 🔐 Admin Login Authentication Endpoint
+// 🔐 Admin Login Authentication Endpoint[cite: 6]
 app.post('/api/admin/login', (req, res) => {
   try {
     const { passcode } = req.body;
@@ -59,19 +60,22 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-// Delivery Fee Endpoints
+// Delivery Fee & Rate Per KM Endpoints (Updated)
 app.get('/api/settings/delivery-fee', (req, res) => {
-  res.json({ deliveryFee: currentDeliveryFee });
+  res.json({ deliveryFee: currentDeliveryFee, ratePerKm: currentRatePerKm });
 });
 
 app.put('/api/settings/delivery-fee', (req, res) => {
   if (req.body.deliveryFee !== undefined) {
     currentDeliveryFee = Number(req.body.deliveryFee);
   }
-  res.json({ success: true, deliveryFee: currentDeliveryFee });
+  if (req.body.ratePerKm !== undefined) {
+    currentRatePerKm = Number(req.body.ratePerKm);
+  }
+  res.json({ success: true, deliveryFee: currentDeliveryFee, ratePerKm: currentRatePerKm });
 });
 
-// Geo-Fence Endpoints (Synced directly with MongoDB Atlas)
+// Geo-Fence Endpoints (Synced directly with MongoDB Atlas)[cite: 6]
 app.get('/api/settings/geofence', async (req, res) => {
   try {
     const zone = await GeoFence.findOne().sort({ updatedAt: -1 });
@@ -117,7 +121,7 @@ app.put('/api/settings/geofence', async (req, res) => {
   }
 });
 
-// ⏰ Restaurant Operating Hours & Status Endpoint
+// ⏰ Restaurant Operating Hours & Status Endpoint[cite: 6]
 app.put('/api/restaurants/:id/hours', async (req, res) => {
   try {
     const { autoMode, isManuallyOpen, operatingHours } = req.body;
@@ -136,7 +140,7 @@ app.put('/api/restaurants/:id/hours', async (req, res) => {
   }
 });
 
-// Offers Endpoints (Synced directly with MongoDB Atlas)
+// Offers Endpoints (Synced directly with MongoDB Atlas)[cite: 6]
 app.get('/api/offers', async (req, res) => {
   try {
     let offer = await Offer.findOne();
@@ -189,7 +193,7 @@ app.put('/api/offers', async (req, res) => {
   }
 });
 
-// Custom Menu Endpoints
+// Custom Menu Endpoints[cite: 6]
 app.get('/api/custom-menu', (req, res) => {
   res.json(customMenuStore);
 });
@@ -205,13 +209,13 @@ app.delete('/api/custom-menu/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// Mount modular routes
+// Mount modular routes[cite: 6]
 app.use('/api/auth', authRoutes);
 app.use('/api/foods', restaurantRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 
-// Socket.io Real-Time Connection Handler
+// Socket.io Real-Time Connection Handler[cite: 6]
 orderSocket(io);
 
 const PORT = process.env.PORT || 5000;

@@ -32,11 +32,14 @@ export default function CartPage() {
   // Restaurant GPS Lookup Map stored in state
   const [restaurantGpsMap, setRestaurantGpsMap] = useState({});
 
-  // Helper to extract GPS coordinates from hotel address string or object
+  // Helper to extract GPS coordinates from hotel address string, array, or object
   const extractGps = (addr) => {
     if (!addr) return null;
     if (typeof addr === 'object' && addr.lat !== undefined && addr.lng !== undefined) {
       return { lat: parseFloat(addr.lat), lng: parseFloat(addr.lng) };
+    }
+    if (Array.isArray(addr) && addr.length > 0) {
+      return extractGps(addr[0]);
     }
     if (typeof addr === 'string') {
       const match = addr.match(/\[GPS:\s*([0-9.-]+),\s*([0-9.-]+)\]/);
@@ -95,17 +98,17 @@ export default function CartPage() {
     // Find specific hotel GPS for items in cart using restaurant metadata map or item address
     let hotelGps = null; 
     for (const item of itemsList) {
-      // 1. Check restaurant GPS map by hotelName / restaurant ID
+      // 1. Check restaurant GPS map by hotelName / restaurant name
       const rKey = (item.hotelName || item.restaurant || '').toLowerCase().trim();
       if (rKey && restMap && restMap[rKey]) {
-        const found = extractGps(restMap[rKey].location || restMap[rKey].address || restMap[rKey].gps);
+        const found = extractGps(restMap[rKey].location || restMap[rKey].address || restMap[rKey].gps || restMap[rKey].hotelLocation || restMap[rKey].hotelAddress);
         if (found) {
           hotelGps = found;
           break;
         }
       }
-      // 2. Check item-level hotelAddress
-      const extractedGps = extractGps(item.hotelAddress);
+      // 2. Check item-level hotelAddress or address
+      const extractedGps = extractGps(item.hotelAddress) || extractGps(item.address) || extractGps(item.hotelLocation);
       if (extractedGps) {
         hotelGps = extractedGps;
         break;

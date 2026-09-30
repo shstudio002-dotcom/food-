@@ -183,6 +183,7 @@ export default function AdminRegisterPage() {
                 placeholder="Enter your full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a' }}
                 className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
                 required
               />
@@ -213,6 +214,7 @@ export default function AdminRegisterPage() {
                 onChange={(e) =>
                   setPhone(e.target.value.replace(/\D/g, ''))
                 }
+                style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a' }}
                 className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-mono font-bold tracking-wide transition"
                 required
               />
@@ -239,6 +241,7 @@ export default function AdminRegisterPage() {
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a' }}
                 className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
                 required
               />
@@ -265,6 +268,7 @@ export default function AdminRegisterPage() {
                 placeholder="Re-enter password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a' }}
                 className="w-full bg-orange-50/30 border border-orange-200 text-slate-900 text-xs rounded-xl py-3.5 pl-10 pr-3 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 font-semibold transition"
                 required
               />

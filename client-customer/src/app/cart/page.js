@@ -65,34 +65,42 @@ export default function CartPage() {
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
   };
 
-  // Recalculate delivery fee based on Hotel Location -> Customer Location distance with robust fallbacks
+  // Recalculate delivery fee based on specific Hotel Location -> Customer Location distance (or backend default if missing GPS)
   const updateDeliveryFeeBasedOnHotel = (custLat, custLng, itemsList, zoneData, currentRatePerKm, currentBaseFee) => {
     const base = currentBaseFee > 0 ? currentBaseFee : 30;
     setBackendDeliveryFee(base);
 
     if (!itemsList || itemsList.length === 0) return;
-    
-    // Get hotel location from the first item, with a fallback default hub coordinate if missing
-    const firstItem = itemsList[0];
-    const extractedGps = extractGpsFromAddress(firstItem.hotelAddress);
-    const hotelGps = extractedGps || { lat: 13.9299, lng: 75.5681 }; // Fallback hub (Shivamogga)
 
     if (zoneData && custLat && custLng) {
       const distFromZoneCenter = calculateDistanceMeters(custLat, custLng, zoneData.centerLat, zoneData.centerLng);
       if (distFromZoneCenter > zoneData.radiusMeters) {
         setIsOutsideGeoFence(true);
-        setGeoFenceMessage(`⚠️ Sorry! Your delivery location is outside our allowed service zone (~${(distFromZoneCenter / 1000).toFixed(1)} km away).`);
+        setGeoFenceMessage(`⚠️️ Sorry! Your delivery location is outside our allowed service zone (~${(distFromZoneCenter / 1000).toFixed(1)} km away).`);
         return;
       } else {
         setIsOutsideGeoFence(false);
         setGeoFenceMessage('');
       }
     }
+    
+    // Find the specific hotel GPS from the cart items
+    let hotelGps = null; 
+    for (const item of itemsList) {
+      const extractedGps = extractGpsFromAddress(item.hotelAddress);
+      if (extractedGps) {
+        hotelGps = extractedGps;
+        break;
+      }
+    }
 
-    if (custLat && custLng) {
+    // If valid hotel GPS and customer coordinates exist, calculate distance fee. Otherwise, use backend default base fee.
+    if (hotelGps && custLat && custLng) {
       const hotelToCustKm = calculateDistanceKm(hotelGps.lat, hotelGps.lng, custLat, custLng);
       const calculatedFee = Math.round(Math.max(1, hotelToCustKm) * currentRatePerKm);
       setBackendDeliveryFee(Math.max(base, calculatedFee));
+    } else {
+      setBackendDeliveryFee(base);
     }
   };
 
@@ -114,7 +122,7 @@ export default function CartPage() {
       },
       () => {
         setIsDetectingGPS(false);
-        alert('⚠️ Please enable exact GPS location permissions in your browser settings.');
+        alert('⚠️️ Please enable exact GPS location permissions in your browser settings.');
       },
       { timeout: 20000, enableHighAccuracy: true, maximumAge: 0 }
     );
@@ -181,7 +189,7 @@ export default function CartPage() {
             price: product.price || 0,
             image: product.image || '',
             hotelId: product.hotelId || '60c72b2f9b1d8b2f98e01234',
-            hotelAddress: product.address || product.hotelLocation || '',
+            hotelAddress: product.hotelAddress || product.address || product.hotelLocation || '',
             quantity 
           } : null;
         }).filter(Boolean);

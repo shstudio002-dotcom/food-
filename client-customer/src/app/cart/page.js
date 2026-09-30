@@ -485,7 +485,7 @@ export default function CartPage() {
                 : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 cursor-pointer'
             }`}
           >
-            <span>{isOutsideGeoFence ? '🚫 Outside Delivery Zone' : 'Pay & Order Item ⚡'}</span>
+            <span>{isOutsideGeoFence ? '🚫 Outside Delivery Zone' : 'Order Item ⚡'}</span>
           </button>
         </>
       )}

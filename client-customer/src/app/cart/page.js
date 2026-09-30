@@ -28,13 +28,21 @@ export default function CartPage() {
   const [geoZone, setGeoZone] = useState(null);
   const [isOutsideGeoFence, setIsOutsideGeoFence] = useState(false);
   const [geoFenceMessage, setGeoFenceMessage] = useState('');
+  
+  // Restaurant GPS Lookup Map stored in state
+  const [restaurantGpsMap, setRestaurantGpsMap] = useState({});
 
-  // Helper to extract GPS coordinates from hotel address string (e.g. "[GPS: 13.9299, 75.5681]")
-  const extractGpsFromAddress = (addressStr) => {
-    if (!addressStr) return null;
-    const match = addressStr.match(/\[GPS:\s*([0-9.-]+),\s*([0-9.-]+)\]/);
-    if (match) {
-      return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+  // Helper to extract GPS coordinates from hotel address string or object
+  const extractGps = (addr) => {
+    if (!addr) return null;
+    if (typeof addr === 'object' && addr.lat !== undefined && addr.lng !== undefined) {
+      return { lat: parseFloat(addr.lat), lng: parseFloat(addr.lng) };
+    }
+    if (typeof addr === 'string') {
+      const match = addr.match(/\[GPS:\s*([0-9.-]+),\s*([0-9.-]+)\]/);
+      if (match) {
+        return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+      }
     }
     return null;
   };
@@ -65,8 +73,8 @@ export default function CartPage() {
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
   };
 
-  // Recalculate delivery fee based on specific Hotel Location -> Customer Location distance (or backend default if missing GPS)
-  const updateDeliveryFeeBasedOnHotel = (custLat, custLng, itemsList, zoneData, currentRatePerKm, currentBaseFee) => {
+  // Recalculate delivery fee based on specific Hotel GPS from /api/foods/restaurants -> Customer Location
+  const updateDeliveryFeeBasedOnHotel = (custLat, custLng, itemsList, zoneData, currentRatePerKm, currentBaseFee, restMap) => {
     const base = currentBaseFee > 0 ? currentBaseFee : 30;
     setBackendDeliveryFee(base);
 
@@ -76,7 +84,7 @@ export default function CartPage() {
       const distFromZoneCenter = calculateDistanceMeters(custLat, custLng, zoneData.centerLat, zoneData.centerLng);
       if (distFromZoneCenter > zoneData.radiusMeters) {
         setIsOutsideGeoFence(true);
-        setGeoFenceMessage(`⚠️️ Sorry! Your delivery location is outside our allowed service zone (~${(distFromZoneCenter / 1000).toFixed(1)} km away).`);
+        setGeoFenceMessage(`⚠️ Sorry! Your delivery location is outside our allowed service zone (~${(distFromZoneCenter / 1000).toFixed(1)} km away).`);
         return;
       } else {
         setIsOutsideGeoFence(false);
@@ -84,17 +92,26 @@ export default function CartPage() {
       }
     }
     
-    // Find the specific hotel GPS from the cart items
+    // Find specific hotel GPS for items in cart using restaurant metadata map or item address
     let hotelGps = null; 
     for (const item of itemsList) {
-      const extractedGps = extractGpsFromAddress(item.hotelAddress);
+      // 1. Check restaurant GPS map by hotelName / restaurant ID
+      const rKey = (item.hotelName || item.restaurant || '').toLowerCase().trim();
+      if (rKey && restMap && restMap[rKey]) {
+        const found = extractGps(restMap[rKey].location || restMap[rKey].address || restMap[rKey].gps);
+        if (found) {
+          hotelGps = found;
+          break;
+        }
+      }
+      // 2. Check item-level hotelAddress
+      const extractedGps = extractGps(item.hotelAddress);
       if (extractedGps) {
         hotelGps = extractedGps;
         break;
       }
     }
 
-    // If valid hotel GPS and customer coordinates exist, calculate distance fee. Otherwise, use backend default base fee.
     if (hotelGps && custLat && custLng) {
       const hotelToCustKm = calculateDistanceKm(hotelGps.lat, hotelGps.lng, custLat, custLng);
       const calculatedFee = Math.round(Math.max(1, hotelToCustKm) * currentRatePerKm);
@@ -104,7 +121,7 @@ export default function CartPage() {
     }
   };
 
-  const handleAutoDetectGPS = (currentItems, zoneData, currentRatePerKm, currentBaseFee) => {
+  const handleAutoDetectGPS = (currentItems, zoneData, currentRatePerKm, currentBaseFee, restMap) => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
       return;
@@ -118,11 +135,11 @@ export default function CartPage() {
         localStorage.setItem('shopmatries_lng', longitude);
         setIsDetectingGPS(false);
 
-        updateDeliveryFeeBasedOnHotel(latitude, longitude, currentItems, zoneData, currentRatePerKm, currentBaseFee);
+        updateDeliveryFeeBasedOnHotel(latitude, longitude, currentItems, zoneData, currentRatePerKm, currentBaseFee, restMap);
       },
       () => {
         setIsDetectingGPS(false);
-        alert('⚠️️ Please enable exact GPS location permissions in your browser settings.');
+        alert('⚠️ Please enable exact GPS location permissions in your browser settings.');
       },
       { timeout: 20000, enableHighAccuracy: true, maximumAge: 0 }
     );
@@ -143,12 +160,13 @@ export default function CartPage() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://food-cgs4.onrender.com';
     const userPhoneKey = savedPhone || 'default_user';
 
-    // Fetch Admin Delivery Fee Settings from /api/settings/delivery-fee, Geo-Fence, and Foods simultaneously
+    // Fetch Delivery Fee Settings, Geo-Fence, Foods, and Restaurant GPS data simultaneously
     Promise.all([
       fetch(`${API_URL}/api/settings/delivery-fee`).then(res => res.json()).catch(() => ({})),
       fetch(`${API_URL}/api/settings/geofence`).then(res => res.json()).catch(() => ({})),
-      fetch(`${API_URL}/api/foods`).then(res => res.json()).catch(() => ([]))
-    ]).then(([feeData, zoneData, productsData]) => {
+      fetch(`${API_URL}/api/foods`).then(res => res.json()).catch(() => ([])),
+      fetch(`${API_URL}/api/foods/restaurants`).then(res => res.json()).catch(() => ([]))
+    ]).then(([feeData, zoneData, productsData, restaurantsData]) => {
       let currentRate = 5;
       let currentBase = 30;
       if (feeData) {
@@ -169,6 +187,17 @@ export default function CartPage() {
         setGeoZone(zoneData);
       }
 
+      const restMap = {};
+      if (Array.isArray(restaurantsData)) {
+        restaurantsData.forEach(r => {
+          const name = r.name || r.hotelName || r.restaurantName;
+          if (name) {
+            restMap[name.toLowerCase().trim()] = r;
+          }
+        });
+        setRestaurantGpsMap(restMap);
+      }
+
       const catalog = Array.isArray(productsData) ? productsData : [];
       let customDetails = {};
       try {
@@ -182,6 +211,7 @@ export default function CartPage() {
         const items = Object.entries(cartObj).map(([id, quantity]) => {
           const product = catalog.find(item => String(item._id || item.id) === String(id)) || customDetails[id];
           const resolvedName = product?.englishName || product?.name || product?.dishName || 'Food Item';
+          const resolvedHotelName = product?.hotelName || product?.restaurant || product?.restaurantName || '';
 
           return product ? { 
             id: String(product._id || product.id),
@@ -189,6 +219,7 @@ export default function CartPage() {
             price: product.price || 0,
             image: product.image || '',
             hotelId: product.hotelId || '60c72b2f9b1d8b2f98e01234',
+            hotelName: resolvedHotelName,
             hotelAddress: product.hotelAddress || product.address || product.hotelLocation || '',
             quantity 
           } : null;
@@ -202,9 +233,9 @@ export default function CartPage() {
           const lat = parseFloat(savedLat);
           const lng = parseFloat(savedLng);
           setGpsCoordinates({ lat, lng });
-          updateDeliveryFeeBasedOnHotel(lat, lng, items, activeZone, currentRate, currentBase);
+          updateDeliveryFeeBasedOnHotel(lat, lng, items, activeZone, currentRate, currentBase, restMap);
         } else {
-          handleAutoDetectGPS(items, activeZone, currentRate, currentBase);
+          handleAutoDetectGPS(items, activeZone, currentRate, currentBase, restMap);
         }
       } else {
         setCartItems([]);
@@ -231,7 +262,7 @@ export default function CartPage() {
     localStorage.setItem('shopmatries_cart', JSON.stringify(cartObj));
 
     if (gpsCoordinates.lat && gpsCoordinates.lng) {
-      updateDeliveryFeeBasedOnHotel(gpsCoordinates.lat, gpsCoordinates.lng, updated, geoZone, adminRatePerKm, adminBaseFee);
+      updateDeliveryFeeBasedOnHotel(gpsCoordinates.lat, gpsCoordinates.lng, updated, geoZone, adminRatePerKm, adminBaseFee, restaurantGpsMap);
     }
   };
 
@@ -327,7 +358,7 @@ export default function CartPage() {
           <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl space-y-3">
             <div className="flex justify-between items-center">
               <label className="text-xs font-black text-orange-900 uppercase tracking-wide">📍 Delivery Address & Contact</label>
-              <button onClick={() => handleAutoDetectGPS(cartItems, geoZone, adminRatePerKm, adminBaseFee)} disabled={isDetectingGPS} className="bg-white text-orange-700 border border-orange-200 hover:bg-orange-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
+              <button onClick={() => handleAutoDetectGPS(cartItems, geoZone, adminRatePerKm, adminBaseFee, restaurantGpsMap)} disabled={isDetectingGPS} className="bg-white text-orange-700 border border-orange-200 hover:bg-orange-100 text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition cursor-pointer">
                 <span>{isDetectingGPS ? '🛰️ Capturing Exact Pin...' : '📡 Refresh Exact GPS'}</span>
               </button>
             </div>

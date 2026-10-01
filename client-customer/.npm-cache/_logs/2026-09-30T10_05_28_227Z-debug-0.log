@@ -5,10 +5,10 @@
 4 silly config load:file:E:\Food delivery system\client-customer\.npmrc
 5 silly config load:file:C:\Users\HP\.npmrc
 6 silly config load:file:E:\Food delivery system\client-customer\.npm-global\etc\npmrc
-7 verbose title npm exec cap sync android
-8 verbose argv "exec" "--" "cap" "sync" "android"
-9 verbose logfile logs-max:10 dir:E:\Food delivery system\client-customer\.npm-cache\_logs\2026-09-29T16_17_12_692Z-
-10 verbose logfile E:\Food delivery system\client-customer\.npm-cache\_logs\2026-09-29T16_17_12_692Z-debug-0.log
+7 verbose title npm run build
+8 verbose argv "run" "build"
+9 verbose logfile logs-max:10 dir:E:\Food delivery system\client-customer\.npm-cache\_logs\2026-09-30T10_05_28_227Z-
+10 verbose logfile E:\Food delivery system\client-customer\.npm-cache\_logs\2026-09-30T10_05_28_227Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 verbose cwd E:\Food delivery system\client-customer

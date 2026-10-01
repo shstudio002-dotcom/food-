@@ -274,6 +274,15 @@ export default function AdminLoginPage() {
 
           </button>
 
+          <div className="flex justify-end mt-2 mb-4">
+       <a
+    href="/forgot-password"
+    className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+      >
+    Forgot Password?
+     </a>
+    </div>
+
         </form>
 
 
